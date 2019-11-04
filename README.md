@@ -1,6 +1,5 @@
 # Parallel-file-system
 
-Setup GRPC
 ```
 sudo apt-get install build-essential autoconf libtool pkg-config
 ```
@@ -17,4 +16,16 @@ sudo apt-get install autoconf automake libtool curl make g++ unzip
      make check
      sudo make install
      sudo ldconfig # refresh shared library cache.
+ ```
+
+Setup GRPC
+```
+git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc
+cd grpc
+git submodule update --init
+cd grpc/third_party/protobuf
+sudo make install
+cd ../../
+make
+sudo make install
  ```
