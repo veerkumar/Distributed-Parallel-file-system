@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+
+package MetaDataManager;
+
+// The greeting service definition.
+service MetaDataManagerService {
+  // Sends a greeting
+  rpc fileAccessRequestHandler (FileAccessRequest) returns (FileAccessResponse) {}
+}
+
+/* The request message containing information for file access
+ we added re_ipaddr for server to send responce back on another channel.
+ One client can send mutiple request hence using request id
+*/
+/*
+  enum 
+*/
+message FileAccessRequest {
+  uint32 serviceType = 1;
+  uint32 StartByte = 2;
+  uint32 EndByte = 3;
+  uint64 RequestId = 4;  
+  string FileName = 5;
+  string ReqIpaddrPort = 6;
+  bytes  data = 7;
+}
+
+/* The response message containing request status and token if success 
+*/
+message  FileAccessResponse {
+  uint64 RequestId = 1;
+  string ReqStatus = 2;
+  string Token = 3;
+  repeated string serverList = 4;
+}
+

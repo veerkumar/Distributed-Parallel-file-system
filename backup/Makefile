@@ -23,12 +23,12 @@ PROTOS_PATH = protos
 
 vpath %.proto $(PROTOS_PATH)
 
-all: system-check meta_data_manager_server client_test
+all: system-check meta_data_manager_server meta_data_manager_client
 
-meta_data_manager_server: meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.o meta_data_manager_server.o
+meta_data_manager_server: client_to_meta_manager.pb.o client_to_meta_manager.grpc.pb.o meta_data_manager_server.o
 	$(CXX)  $^ $(LDFLAGS) -g -o $@
 
-client_test: meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.o cache_manager.o pfs.o client_test.o 
+meta_data_manager_client: client_to_meta_manager.pb.o client_to_meta_manager.grpc.pb.o meta_data_manager_client.o
 	$(CXX)  $^ $(LDFLAGS) -g -o $@
 
 
@@ -41,7 +41,7 @@ client_test: meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.
 	$(PROTOC) -I $(PROTOS_PATH) --cpp_out=. $<
 
 clean:
-	rm -f *.o *.pb.cc *.pb.h client_test meta_data_manager_server
+	rm -f *.o *.pb.cc *.pb.h meta_data_manager_server
 
 
 # The following is to test your system and ensure a smoother experience.

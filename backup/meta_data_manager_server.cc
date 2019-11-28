@@ -1,5 +1,5 @@
 #include "commons.h"
-#include "meta_data_manager_services.grpc.pb.h"
+#include "client_to_meta_manager.grpc.pb.h"
 
 using grpc::Server;
 using grpc::ServerBuilder;

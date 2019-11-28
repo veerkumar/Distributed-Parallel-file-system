@@ -6,5 +6,5 @@
 struct pfs_stat {
   time_t pst_mtime; /* time of last data modification */
   time_t pst_ctime; /* time of creation */
-  off_t pst_size    /* File size in bytes */
-}
+  off_t pst_size;    /* File size in bytes */
+};

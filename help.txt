@@ -1,0 +1,1 @@
+Does pd.close means delete all cache block related to that file?
