@@ -12,9 +12,6 @@ using MetaDataManager::FileAccessRequest;
 using MetaDataManager::FileAccessResponse;
 using MetaDataManager::MetaDataManagerService;
 
-
-
-
 class meta_data_manager_client {
 	private:
 		std::unique_ptr<MetaDataManagerService::Stub> stub_;
@@ -24,6 +21,9 @@ class meta_data_manager_client {
 		file_access_response_t* file_access_request_handler( file_access_request_t *c_req);
 
 };
+
+extern meta_data_manager_client *mdm_service;
+
 int create_new_file (const char *filename, int stripe_width);
 void write_file_to_server(cache_block* cb,  int start, int end, string server_ip);
 
