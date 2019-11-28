@@ -160,7 +160,8 @@ initialize (int argc, char *argv[]) {
 
 }
 int pfs_create(const char *filename, int stripe_width) { 
-	create_new_file(filename, stripe_width);	
+	create_new_file(filename, stripe_width);
+	return 2;	
 }
 
 int pfs_open(const char *filename, const char mode){return 1;}
@@ -169,7 +170,11 @@ size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_h
 
 size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){return 1;}
 
-int pfs_close(int filedes){return 1;}
+int pfs_close(int filedes){
+	thread_harvester.join();
+	thread_flusher.join();
+	return 1;
+}
 
 int pfs_delete(const char *filename) {return 1;}
 

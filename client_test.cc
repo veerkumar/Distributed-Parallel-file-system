@@ -13,19 +13,12 @@ int main(int argc, char *argv[])
   int cache_hit;
   ssize_t nread;
   string line;
-  ifstream file (input_fname);
-  if (file.is_open())
-  {
-    while ( getline (file,line) )
-    {
-      cout << line << '\n';
-    }
-    file.close();
-  }
   
   // Initialize the client
   initialize(argc, argv);
-  
+
+  cout<<"\n All initialization is done";
+ 
   // the command line arguments include an input filename
   if (argc < 2)
     {
@@ -34,9 +27,12 @@ int main(int argc, char *argv[])
     }
   strcpy(input_fname, argv[1]);
 
+  ifstream file (input_fname);
+
   buf = new char[5*ONEKB];
   if (file.is_open())
   {
+	cout<<"\nFIle is open";
     while ( getline (file,line) )
     {
       cout << line << '\n';
@@ -64,8 +60,8 @@ int main(int argc, char *argv[])
   //Write the first 200 bytes of data from the input file onto pfs_file
   err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
-
-  pfs_close(fdes);*/
+*/
+  pfs_close(fdes);
 
   free(buf); 
   return 0;
