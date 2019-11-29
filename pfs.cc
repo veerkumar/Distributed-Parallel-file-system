@@ -1,6 +1,6 @@
 #include "commons.h"
 #include "pfs.h"
-#include "mdm.h"
+#include "c_mdm.h"
 
 meta_data_manager_client *mdm_service;
 thread thread_flusher;

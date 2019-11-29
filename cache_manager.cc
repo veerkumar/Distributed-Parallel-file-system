@@ -1,5 +1,6 @@
 #include "commons.h"
 #include "cache_manager.h"
+#include "config.h"
 using namespace std;
 
 cache_manager *c_m;
@@ -9,7 +10,7 @@ cache_block:: cache_block() {
 	file_name = "";
 	start_index = 0;
 	end_index = 0;
-	data = new char[BLOCK_SIZE];
+	data = new char[CLIENT_CACHE_SIZE*MEGA];
 }
 cache_block::~cache_block(){
 	if(data != NULL) {

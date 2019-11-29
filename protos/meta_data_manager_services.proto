@@ -31,16 +31,23 @@ message FileAccessRequest {
   string FileName = 5;
   string ReqIpaddrPort = 6;
   bytes  data = 7;
+  uint32 stripwidth = 8;
 }
 
 /* The response message containing request status and token if success 
 */
 message  FileAccessResponse {
   uint64 RequestId = 1;
-  string ReqStatus = 2;
+  enum ReturnCode {
+              OK = 0; 
+              ERROR = 1;
+  }
+  ReturnCode code = 2;
   string Token = 3;
   repeated string serverList = 4;
 }
+
+
 /*As soon as client or server start, it need to register service with the meta data manager*/
 message RegisterServiceRequest {
 	enum ServiceType {

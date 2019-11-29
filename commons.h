@@ -46,7 +46,7 @@ typedef struct file_access_request_ {
 
 typedef struct  file_access_response_ {
   int request_id ;
-  string req_status;
+  return_code code;
   string token;
 } file_access_response_t;
 

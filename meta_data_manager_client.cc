@@ -1,5 +1,5 @@
 #include "commons.h"
-#include "mdm.h"
+#include "c_mdm.h"
 
 
 int get_random_number () {
@@ -12,7 +12,7 @@ int get_random_number () {
 void 
 print_response(file_access_response_t *c_response) {
 	cout<<"\n"<<c_response->request_id;
-	cout<<"\n"<<c_response->req_status;
+	cout<<"\n"<<c_response->code;
 	cout<<"\n"<<c_response->token;
 	cout<<"\n";
 }
@@ -28,7 +28,7 @@ file_access_response_t*
 extract_response_from_payload(FileAccessResponse Response) {
 	file_access_response_t *c_response = new file_access_response_t;
 	c_response->request_id = Response.requestid();
-	c_response->req_status = Response.reqstatus();
+//	c_response->req_status = Response.reqstatus();
 	c_response->token= Response.token();
 	return c_response;
 }
