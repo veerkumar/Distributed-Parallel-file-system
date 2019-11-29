@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+
+package FileServer;
+
+service FileServerService {
+  rpc fileReadWriteRequestHandler (FileReadWriteRequest) returns (FileReadWriteResponse) {}
+}
+
+/* The request message containing information for file access
+ we added re_ipaddr for server to send responce back on another channel.
+ One client can send mutiple request hence using request id
+*/
+
+message FileReadWriteRequest {
+  enum RequestType {
+	READ = 0;
+	WRITE = 1;
+	CREATE = 2;
+  }
+  RequestType type = 1;
+  uint32 StartByte = 2;
+  uint32 EndByte = 3;
+  uint64 RequestId = 4;  
+  string FileName = 5;
+  string ReqIpaddrPort = 6;
+  bytes  data = 7;         //This will be filled while writing file to the server
+}
+
+/* The response message containing request status and token if success 
+*/
+message  FileReadWriteResponse {
+  uint64 RequestId = 1;
+  string ReqStatus = 2;
+  bytes  data = 3;
+}

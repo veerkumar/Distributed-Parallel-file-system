@@ -7,6 +7,8 @@ package MetaDataManager;
 service MetaDataManagerService {
   // Sends a greeting
   rpc fileAccessRequestHandler (FileAccessRequest) returns (FileAccessResponse) {}
+  rpc registerServiceHandler(RegisterServiceRequest) returns (RegisterServiceResponse) {}
+  rpc updateLastModifiedServiceHandler(UpdateLastModifiedServiceRequest) returns (UpdateLastModifiedServiceResponse) {}
 }
 
 /* The request message containing information for file access
@@ -17,7 +19,12 @@ service MetaDataManagerService {
   enum 
 */
 message FileAccessRequest {
-  uint32 serviceType = 1;
+  enum RequestType {
+	READ = 0;
+	WRITE = 1;
+	CREATE = 2;
+  }
+  RequestType type = 1;
   uint32 StartByte = 2;
   uint32 EndByte = 3;
   uint64 RequestId = 4;  
@@ -34,4 +41,37 @@ message  FileAccessResponse {
   string Token = 3;
   repeated string serverList = 4;
 }
+/*As soon as client or server start, it need to register service with the meta data manager*/
+message RegisterServiceRequest {
+	enum ServiceType {
+		CLIENT = 0;
+		FILESERVER = 1;
+	}
+	ServiceType Type = 1;
+	string IpPort = 2;
+}
 
+message RegisterServiceResponse {
+    enum ReturnCode {
+		OK = 0;
+		ERROR = 1;
+    }
+    ReturnCode code = 1;
+}
+
+/* Update file last modified time service */
+
+message UpdateLastModifiedServiceRequest {
+        string fileName = 1;
+	uint64  time = 2;
+}
+
+
+
+message UpdateLastModifiedServiceResponse{
+    enum ReturnCode {
+		OK = 0;
+		ERROR = 1;
+    }
+    ReturnCode code = 1;
+}
