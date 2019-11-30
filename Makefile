@@ -28,7 +28,7 @@ all: system-check meta_data_manager_server client_test file_server
 meta_data_manager_server: meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.o meta_data_manager_server.o 
 	$(CXX)  $^ $(LDFLAGS) -g -o $@
 
-client_test: meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.o file_server_services.pb.o file_server_services.grpc.pb.o cache_manager.o pfs.o meta_data_manager_client.o client_test.o 
+client_test: meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.o file_server_services.pb.o file_server_services.grpc.pb.o client_server_services.pb.o client_server_services.grpc.pb.o cache_manager.o client_server.o pfs.o meta_data_manager_client.o client_test.o 
 	$(CXX)  $^ $(LDFLAGS) -g -o $@
 
 file_server:meta_data_manager_services.pb.o meta_data_manager_services.grpc.pb.o file_server_services.pb.o file_server_services.grpc.pb.o file_server.o

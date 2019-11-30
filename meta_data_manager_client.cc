@@ -23,6 +23,12 @@ print_request(file_access_request_t *c_req) {
 	cout<<"\n"<<c_req->file_name;
 	cout<<"\n"<<c_req->req_ipaddr_port;
 }
+void
+print_request(register_service_request_t *c_req) {
+        cout<<"\n"<<c_req->type;
+        cout<<"\n"<<c_req->ip_port;
+}
+
 
 file_access_response_t* 
 extract_response_from_payload(FileAccessResponse Response) {
@@ -33,6 +39,19 @@ extract_response_from_payload(FileAccessResponse Response) {
 	return c_response;
 }
 
+register_service_response_t*
+extract_response_from_payload(RegisterServiceResponse Response) {
+        register_service_response_t *c_response = new register_service_response_t;
+        if(Response.code() == RegisterServiceResponse::OK) {
+                c_response->code = OK;
+        }
+        if(Response.code() == RegisterServiceResponse::ERROR) {
+                c_response->code = ERROR;
+        }
+        return c_response;
+}
+
+
 void 
 make_req_payload (FileAccessRequest *payload, 
 		file_access_request_t *req) {
@@ -42,6 +61,16 @@ make_req_payload (FileAccessRequest *payload,
 	payload->set_filename(req->file_name);
 	payload->set_reqipaddrport(req->req_ipaddr_port);
 }
+void
+make_req_payload (RegisterServiceRequest *payload,
+                register_service_request_t *req) {
+        if(req->type == CLIENT) {
+                payload->set_type(RegisterServiceRequest::CLIENT);
+        }
+        payload->set_ipport(req->ip_port);
+}
+
+
 
 		
 
@@ -70,6 +99,31 @@ file_access_response_t* meta_data_manager_client::file_access_request_handler( f
 
 
 }
+register_service_response_t* meta_data_manager_client::register_service_handler( register_service_request_t *c_req) {
+        RegisterServiceRequest ReqPayload;
+        RegisterServiceResponse Response;
+        ClientContext Context;
+
+        register_service_response_t *c_response = NULL;
+        make_req_payload(&ReqPayload, c_req);
+
+        print_request(c_req);
+
+        // The actual RPC.
+        Status status = stub_->registerServiceHandler(&Context, ReqPayload, &Response);
+
+        // Act upon its status.
+        if (status.ok()) {
+                c_response = extract_response_from_payload(Response);
+                return c_response;
+        } else {
+                std::cout << status.error_code() << ": " << status.error_message()
+                        << std::endl;
+                return 0;
+        }
+}
+
+
 
 
 

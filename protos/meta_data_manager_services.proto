@@ -73,8 +73,6 @@ message UpdateLastModifiedServiceRequest {
 	uint64  time = 2;
 }
 
-
-
 message UpdateLastModifiedServiceResponse{
     enum ReturnCode {
 		OK = 0;

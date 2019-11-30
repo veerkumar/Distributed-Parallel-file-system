@@ -18,7 +18,7 @@ bool meta_data_manager::add_server_to_server_list(string server) {
 	mut_server_list.unlock();	
 }
 
-
+/* Add meta data manager function's(which will be called by remote clients) Here */
 
 class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	Status fileAccessRequestHandler (ServerContext* context,const  FileAccessRequest* request,
@@ -33,14 +33,18 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		cout<<"\n"<<request->reqipaddrport(); 
 		reply->set_requestid(request->requestid());
 		reply->set_code(FileAccessResponse::OK);
-
+		int i = 0;
 		if (request->type() == FileAccessRequest::CREATE) {
 			if(m_m->server_list.size() < request->stripwidth()) {
 				cout<<"Error: stripwidth size is more then available server\n";
 				reply->set_code(FileAccessResponse::ERROR);
 			} else {
-			
-
+				 reply->set_code(FileAccessResponse::OK);
+				 for(auto it = m_m->server_list.begin();
+						 it!=m_m->server_list.end(), i<(request->stripwidth());
+						 it++,i++) {
+				 reply->add_serverlist(m_m->server_list[i]);
+				 }
 			}	
 		
 		}
@@ -60,6 +64,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 
 
 };
+
 void RunServer() {
 
 	std::string server_address("0.0.0.0:50051");

@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+
+package ClientServer;
+
+service ClientServerService {
+  rpc fileRevokePermissionRequestHandler (FilePermissionRevokeRequest) returns (FilePermissionRevokeResponse) {}
+}
+
+/* The request message containing information for file access revoke
+ we added token for client_server to identify the permission and modify it.
+ One client can send mutiple request hence using request id
+*/
+
+message FilePermissionRevokeRequest {
+  enum RequestType {
+	READ = 0;
+	WRITE = 1;
+  }
+  RequestType type = 1;
+  uint32 StartByte = 2;
+  uint32 EndByte = 3;
+  uint64 RequestId = 4;  
+  string FileName = 5;
+  string token = 6;
+}
+
+/* The response message containing request status and token if success 
+*/
+message  FilePermissionRevokeResponse {
+  uint64 RequestId = 1;
+  enum ReturnCode {
+              OK = 0;
+              REJECTED = 1;
+  }
+  ReturnCode code = 2;
+  string Token = 3;
+}

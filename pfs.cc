@@ -1,11 +1,52 @@
 #include "commons.h"
 #include "pfs.h"
 #include "c_mdm.h"
+#include "cs_mdm.h"
 
 meta_data_manager_client *mdm_service;
 thread thread_flusher;
 thread thread_harvester;
+thread thread_client_server;
 string server_ip_port = "localhost:50051";
+
+
+
+void
+set_ipaddr_port() {
+        struct ifaddrs *interfaces = NULL;
+        struct ifaddrs *temp_addr = NULL;
+        int success = 0;
+        // retrieve the current interfaces - returns 0 on success
+        success = getifaddrs(&interfaces);
+        if (success == 0) {
+                // Loop through linked list of interfaces
+                temp_addr = interfaces;
+                while(temp_addr != NULL) {
+                        if(temp_addr->ifa_addr->sa_family == AF_INET) {
+                                if(strcmp(temp_addr->ifa_name, INTERFACE)==0){
+                                        ipAddress=inet_ntoa(((struct sockaddr_in*)temp_addr->ifa_addr)->sin_addr);
+#ifdef DEBUG_FLAG                               
+                                        cout<<"\n IPaddress"<<ipAddress;
+#endif
+                                }
+                        }
+                        temp_addr = temp_addr->ifa_next;
+                }
+        }
+        // Free memory
+        freeifaddrs(interfaces);
+        /* initialize random seed: */
+        srand (time(NULL));
+
+        /* generate secret number between 5000 to 65000: */
+        port = rand() % 60000 + 5000;
+        client_server_ip_port.append(ipAddress);
+        client_server_ip_port.append(":");
+        client_server_ip_port.append(to_string(port));
+}
+
+
+
 
 /* TODO: Need to make thread safe 
 	 BLOCK_SIZE here is not correct, need to use PFS_BLOCK_SIZE to find correct server address, now assumming both are equal
@@ -25,7 +66,8 @@ void harvest_block(cache_block *cb) {
 			while(1) {
 				server_index = temp_start/BLOCK_SIZE;
 				temp_end = (range.second >=
-						((server_index+1)*BLOCK_SIZE))?((server_index+1)*BLOCK_SIZE - 1):range.second;       
+						((server_index+1)*BLOCK_SIZE))?((server_index+1)*BLOCK_SIZE - 1):range.second;
+			 //TODO write_file_to_server function implemention is not done yet	
 				write_file_to_server(cb,
 						temp_start,
 						temp_end,
@@ -142,6 +184,21 @@ void flusher_process(){
 		flusher();
 	}
 }
+
+void 
+register_client_and_start_client_server_process(){
+	register_service_request_t *c_req = new register_service_request_t;
+        register_service_response_t *c_response = NULL;
+
+        c_req->type  = CLIENT;
+        c_req->ip_port = client_server_ip_port;
+
+        c_response = mdm_service->register_service_handler(c_req);
+        cout<<"Response recieved";
+	start_client_server(); // it will never return
+	return;
+}
+
 void
 initialize (int argc, char *argv[]) {
 
@@ -157,7 +214,11 @@ initialize (int argc, char *argv[]) {
 	thread_flusher = std::thread(flusher_process);
 	mdm_service = new meta_data_manager_client (grpc::CreateChannel(server_ip_port, grpc::InsecureChannelCredentials()));
 	
+	/* generate port and fetch ip */
+	set_ipaddr_port();
+	thread_client_server = std::thread(register_client_and_start_client_server_process);	
 
+	return;
 }
 int pfs_create(const char *filename, int stripe_width) { 
 	create_new_file(filename, stripe_width);

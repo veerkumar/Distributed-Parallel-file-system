@@ -1,5 +1,4 @@
 #include "config.h"
-//#include "cache_manager.h"
 
 #define HARVEST_TIME 30    // In second
 /* Make room for new cache block */
@@ -10,6 +9,7 @@ using namespace std;
 
 extern thread thread_flusher;
 extern thread thread_harvester;
+extern thread thread_client_server;
 class meta_data_manager_client; 
 extern meta_data_manager_client *mdm_service;
 extern string server_ip_port;

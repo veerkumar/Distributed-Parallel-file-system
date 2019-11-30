@@ -24,6 +24,7 @@ class meta_data_manager_client {
 	public:
 		meta_data_manager_client(std::shared_ptr<Channel> channel): stub_(MetaDataManagerService::NewStub(channel)){};
 		file_access_response_t* file_access_request_handler( file_access_request_t *c_req);
+		 register_service_response_t* register_service_handler( register_service_request_t *c_req);
 
 };
 
