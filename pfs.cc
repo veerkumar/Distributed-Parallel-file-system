@@ -222,10 +222,24 @@ initialize (int argc, char *argv[]) {
 }
 int pfs_create(const char *filename, int stripe_width) { 
 	create_new_file(filename, stripe_width);
+	 /* Send request to MM 
+	  * 
+	  * return mm lists and add into  the file list along with the permission 
+	  *
+	  * Allocate data in the cache 
+	  * run harvester imidiatly 
+	  *  */
 	return 2;	
 }
 
-int pfs_open(const char *filename, const char mode){return 1;}
+int pfs_open(const char *filename, const char mode){
+	
+		/*
+		 * get server list 
+		 *
+		 * */
+	
+	return 1;}
 
 size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit){return 1;}
 
@@ -239,5 +253,6 @@ int pfs_close(int filedes){
 
 int pfs_delete(const char *filename) {return 1;}
 
-int pfs_fstat(int filedes, struct pfs_stat *buf) {return 1;} 
-
+int pfs_fstat(int filedes, struct pfs_stat *buf) {
+		/*Add last modifieed in the messageresposen. */
+	return 1;} 

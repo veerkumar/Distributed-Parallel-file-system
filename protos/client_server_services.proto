@@ -16,6 +16,7 @@ message FilePermissionRevokeRequest {
   enum RequestType {
 	READ = 0;
 	WRITE = 1;
+	DELETE = 2;
   }
   RequestType type = 1;
   uint32 StartByte = 2;
@@ -33,6 +34,9 @@ message  FilePermissionRevokeResponse {
               OK = 0;
               REJECTED = 1;
   }
+
   ReturnCode code = 2;
   string Token = 3;
+  uint32 StartByte = 4;
+  uint32 EndByte = 5;
 }

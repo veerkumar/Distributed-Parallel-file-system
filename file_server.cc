@@ -146,7 +146,7 @@ class file_server_service_impl : public FileServerService::Service {
              cout<<"\n"<<request->filename();
              cout<<"\n"<<request->reqipaddrport();
              reply->set_requestid(request->requestid());
-	     reply->set_reqstatus("OK");
+	     reply->set_reqstatus(FileReadWriteResponse::OK);
 	     reply->set_data("As of now I have this as file data, I will improve later");
 	    } else {
 	    
@@ -160,7 +160,7 @@ class file_server_service_impl : public FileServerService::Service {
            cout<<"\n"<<request->filename();
            cout<<"\n"<<request->reqipaddrport();
            reply->set_requestid(request->requestid());
-           reply->set_reqstatus("OK");
+           reply->set_reqstatus(FileReadWriteResponse::OK);
            reply->set_data("");
 	   /*close file*/
 

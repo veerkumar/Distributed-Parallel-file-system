@@ -1,5 +1,6 @@
 #include "commons.h"
 #include "meta_data_manager_services.grpc.pb.h"
+#include "client_server_services.grpc.pb.h"
 #include "m_mdm.h"
 
 meta_data_manager *m_m;
@@ -18,9 +19,31 @@ bool meta_data_manager::add_server_to_server_list(string server) {
 	mut_server_list.unlock();	
 }
 
+
+void 
+revoke_client::send_revoke_request () {
+
+		FilePermissionRevokeResponse Response;
+		FilePermissionRevokeRequest Req ;
+		ClientContext Context;
+
+		/*Make you payload(i.e response from c_data structe)*/
+		Status status = stub_->fileRevokePermissionRequestHandler(&Context, Req, &Response);
+		if (status.ok()) {
+			cout<<"revoke request return code: "<< Response.code()    ;
+			return ;
+		} else {
+			std::cout << status.error_code() << ": " << status.error_message() << std::endl;
+			return ;
+		}
+}
+
+
+
 /* Add meta data manager function's(which will be called by remote clients) Here */
 
 class meta_data_manager_service_impl : public MetaDataManagerService::Service {
+
 	Status fileAccessRequestHandler (ServerContext* context,const  FileAccessRequest* request,
 			FileAccessResponse* reply) override {
 		std::cout << "\nGot the message ";
@@ -48,7 +71,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 			}	
 		
 		}
+		/*REMOVE_ME*/
+		m_m->client_connection[request->reqipaddrport()]->send_revoke_request();
 		return Status::OK;
+	}
+
+	bool create_connection_with_client(string ip_port) {
+
+		m_m->client_connection[ip_port] =  new revoke_client(grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials()));
 	}
 
         Status registerServiceHandler(ServerContext* context,const  RegisterServiceRequest* request, RegisterServiceResponse* reply) override {
@@ -59,9 +89,23 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
             cout<<"\n"<<request->ipport();
 	    m_m->add_server_to_server_list(request->ipport());
             reply->set_code(RegisterServiceResponse::OK);
+
+	    	if(request->type() == RegisterServiceRequest::CLIENT) {
+			//need lock
+			create_connection_with_client(request->ipport());
+		}
             return Status::OK;
     }
 
+
+         Status updateLastModifiedServiceHandler(ServerContext* context,const  UpdateLastModifiedServiceRequest* request, UpdateLastModifiedServiceResponse *reply) override {
+
+        std::cout << "\nGot the message ";
+
+        cout<<"\n"<<request->time();
+        reply->set_code(UpdateLastModifiedServiceResponse::OK);
+        return Status::OK;
+}
 
 };
 

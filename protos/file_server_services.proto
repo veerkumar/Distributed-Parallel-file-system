@@ -16,7 +16,7 @@ message FileReadWriteRequest {
   enum RequestType {
 	READ = 0;
 	WRITE = 1;
-	CREATE = 2;
+	DELETE  = 2;
   }
   RequestType type = 1;
   uint32 StartByte = 2;
@@ -30,7 +30,11 @@ message FileReadWriteRequest {
 /* The response message containing request status and token if success 
 */
 message  FileReadWriteResponse {
+  enum Status {
+	OK = 0;
+	ERROR = 1;
+  }
   uint64 RequestId = 1;
-  string ReqStatus = 2;
+  Status  ReqStatus = 2;
   bytes  data = 3;
 }

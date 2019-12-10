@@ -23,14 +23,17 @@ message FileAccessRequest {
 	READ = 0;
 	WRITE = 1;
 	CREATE = 2;
+	DELETE = 3;
+	OPEN = 4;
+	FSTAT = 5;
   }
+
   RequestType type = 1;
   uint32 StartByte = 2;
   uint32 EndByte = 3;
   uint64 RequestId = 4;  
   string FileName = 5;
   string ReqIpaddrPort = 6;
-  bytes  data = 7;
   uint32 stripwidth = 8;
 }
 
@@ -44,9 +47,11 @@ message  FileAccessResponse {
   }
   ReturnCode code = 2;
   string Token = 3;
-  repeated string serverList = 4;
+  uint32 StartByte = 4;
+  uint32 EndByte = 5;
+  string FileName = 7;
+  repeated string serverList = 10;
 }
-
 
 /*As soon as client or server start, it need to register service with the meta data manager*/
 message RegisterServiceRequest {
@@ -71,12 +76,14 @@ message RegisterServiceResponse {
 message UpdateLastModifiedServiceRequest {
         string fileName = 1;
 	uint64  time = 2;
+	uint32  NewByteWwrote = 3;
 }
 
 message UpdateLastModifiedServiceResponse{
-    enum ReturnCode {
+	enum ReturnCode {
 		OK = 0;
 		ERROR = 1;
-    }
-    ReturnCode code = 1;
+	}
+	ReturnCode code = 1;
 }
+

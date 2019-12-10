@@ -22,6 +22,10 @@ using MetaDataManager::RegisterServiceResponse;
 using MetaDataManager::UpdateLastModifiedServiceRequest;
 using MetaDataManager::UpdateLastModifiedServiceResponse;
 
+using ClientServer::FilePermissionRevokeRequest;
+using ClientServer::FilePermissionRevokeResponse;
+using ClientServer::ClientServerService;
+
 
 
 enum permission_type {
@@ -39,9 +43,21 @@ struct permission_info {
                                    */
 };
 
+class revoke_client {
+        private:
+                 std::unique_ptr<ClientServerService::Stub> stub_;
+         public:
+                 revoke_client(std::shared_ptr<Channel> channel): stub_(ClientServerService::NewStub(channel)){};
+
+        void send_revoke_request ();
+
+
+};
+
  class meta_data_manager {
  	public:
                  vector<string> server_list;
+		 map<string,revoke_client*> client_connection;
                  map<string,vector<string>> file_to_server_dist_map;
                  map<string,vector<permission_info>> map_file_to_server_dist;
                  map<string,string> token_to_client_map;  /* will fetch clinet info */
