@@ -49,8 +49,10 @@ message  FileAccessResponse {
   string Token = 3;
   uint32 StartByte = 4;
   uint32 EndByte = 5;
-  string FileName = 7;
-  repeated string serverList = 10;
+  uint64 createTime = 6;
+  uint64 lastUpdateTime = 7;
+  uint32 fileSize = 8;
+  repeated string serverList = 9;
 }
 
 /*As soon as client or server start, it need to register service with the meta data manager*/
