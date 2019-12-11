@@ -114,13 +114,14 @@ register_service_response_t* meta_data_manager_client::register_service_handler(
 	}
 }
 
-void meta_data_manager_client::update_last_modified_time (string file_name) {
+void meta_data_manager_client::update_last_modified_time (string file_name,int size) {
 	UpdateLastModifiedServiceRequest Req;
 	UpdateLastModifiedServiceResponse Response;
 	ClientContext Context;
 
 	Req.set_filename(file_name);
 	Req.set_time(time(0));  // epoch time
+	Req.set_newbytewrote(size);  // epoch time
 	Status status = stub_->updateLastModifiedServiceHandler(&Context, Req, &Response);
 	// Act upon its status.
 	if (status.ok()) {
@@ -137,37 +138,62 @@ class file_server_service_impl : public FileServerService::Service {
 	Status fileReadWriteRequestHandler (ServerContext* context,const  FileReadWriteRequest* request, FileReadWriteResponse* reply) override {
 
             std::cout << "\nGot the message ";
+	    FILE *fid;
+	    char *buffer;
+	    size_t result;
+	    int found=0;
 	    if (request->type() == FileReadWriteRequest::READ) {
-	    		/*TODO we need to read from file  */
-	    		 cout<<"\n"<<request->reqipaddrport();
-             cout<<"\n"<<request->startbyte();
-             cout<<"\n"<<request->endbyte();
-             cout<<"\n"<<request->requestid();
-             cout<<"\n"<<request->filename();
-             cout<<"\n"<<request->reqipaddrport();
-             reply->set_requestid(request->requestid());
-	     reply->set_reqstatus(FileReadWriteResponse::OK);
-	     reply->set_data("As of now I have this as file data, I will improve later");
+	    	cout<<"\n"<<request->reqipaddrport();
+             	cout<<"\n"<<request->startbyte();
+             	cout<<"\n"<<request->endbyte();
+             	cout<<"\n"<<request->requestid();
+             	cout<<"\n"<<request->filename();
+		for(auto it=fileManager.begin();it!=fileManager.end();it++){
+			if((*it).compare(request->filename())==0){
+				fid=fopen((*it).c_str(),"r");
+				reply->set_requestid(request->requestid());
+			     	reply->set_reqstatus(FileReadWriteResponse::OK);
+				buffer = (char*) malloc (sizeof(char)*(request->endbyte()-request->startbyte()+1));
+			  	if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
+				fseek(fid,request->startbyte(),SEEK_SET);
+			  	// copy the file into the buffer:
+			  	result = fread (buffer,1,request->endbyte()-request->startbyte()+1,fid);
+			  	if (result != request->endbyte()-request->startbyte()+1) {fputs ("Reading error",stderr); exit (3);}
+						    	
+				reply->set_data(buffer);
+				return Status::OK;
+			}
+		}
+		reply->set_requestid(request->requestid());
+		reply->set_reqstatus(FileReadWriteResponse::ERROR);
+		return Status::CANCELLED;
+             	
 	    } else {
-	    
-	    	/*TODO open file here in write mode and write from startbyte to end_byte
-		 * and update lastmodified in meta_Data_manager */
 
-		cout<<"\n"<<request->reqipaddrport();
-           cout<<"\n"<<request->startbyte();
-           cout<<"\n"<<request->endbyte();
-           cout<<"\n"<<request->requestid();
-           cout<<"\n"<<request->filename();
-           cout<<"\n"<<request->reqipaddrport();
-           reply->set_requestid(request->requestid());
-           reply->set_reqstatus(FileReadWriteResponse::OK);
-           reply->set_data("");
-	   /*close file*/
-
-	   /**/
-		//Send last modified update to meta data server with file name
-		mdm_service->update_last_modified_time(request->filename());
-	    
+		    cout<<"\n"<<request->reqipaddrport();
+		    cout<<"\n"<<request->startbyte();
+		    cout<<"\n"<<request->endbyte();
+		    cout<<"\n"<<request->requestid();
+		    cout<<"\n"<<request->filename();
+		    
+		    fid=fopen(request->filename().c_str(),"w");
+		    reply->set_requestid(request->requestid());
+		    reply->set_reqstatus(FileReadWriteResponse::OK);
+		    fseek(fid,request->startbyte(),SEEK_SET);
+		    fwrite ((void *)&(request->data()),1,request->endbyte()-request->startbyte()+1,fid);
+		    fclose(fid);		    	
+				
+		    
+		    for(auto it=fileManager.begin();it!=fileManager.end();it++){
+			if((*it).compare(request->filename())==0){
+				found=1;
+				continue;
+			}
+		    }
+		    if(found==0)
+			fileManager.push_back(request->filename());
+		    		    	
+		    mdm_service->update_last_modified_time(request->filename(),request->endbyte());
 	    }
 
             return Status::OK;

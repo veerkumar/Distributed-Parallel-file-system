@@ -34,8 +34,8 @@ message FileAccessRequest {
   uint64 RequestId = 4;  
   string FileName = 5;
   string ReqIpaddrPort = 6;
-  uint32 stripwidth = 8;
-  uint64 fdis = 9;  
+  uint32 stripwidth = 7;
+  uint64 fdis = 8;  
 }
 
 /* The response message containing request status and token if success 
@@ -54,6 +54,7 @@ message  FileAccessResponse {
   uint64 lastUpdateTime = 7;
   uint32 fileSize = 8;
   uint64 fdis = 9;      /* file discripter*/
+  uint32 fileID = 9;
   repeated string serverList = 10;
 }
 
@@ -80,7 +81,7 @@ message RegisterServiceResponse {
 message UpdateLastModifiedServiceRequest {
         string fileName = 1;
 	uint64  time = 2;
-	uint32  NewByteWwrote = 3;
+	uint32  NewByteWrote = 3;
 }
 
 message UpdateLastModifiedServiceResponse{
@@ -90,4 +91,3 @@ message UpdateLastModifiedServiceResponse{
 	}
 	ReturnCode code = 1;
 }
-
