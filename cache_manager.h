@@ -50,8 +50,10 @@ class cache_manager {
 		bool rm_from_allocated_list_l ( vector<cache_block*>::iterator& it);
 		bool add_to_map_fname_chunks_l (cache_block *cb);
 		bool rm_from_map_fname_chunks_l (string file_name, cache_block* cb);
-
-
+		
+		int read_file (string file_name, void *buf, int start,int end, int *cache_hit);
+                bool write_file (string file_name, const void *buf, int start,int end, int *cache_hit);
+ 		bool clean_file (string file_name, string operation); 
 };
 
 extern cache_manager *c_m;

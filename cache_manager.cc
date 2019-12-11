@@ -132,3 +132,23 @@ bool cache_manager::add_to_map_fname_chunks_l (cache_block *cb) {
 bool cache_manager::rm_from_map_fname_chunks_l (string file_name, cache_block* cb) {
 	return true;	
 }
+
+int cache_manager::read_file (string file_name, void *buf, int start,int end, int *cache_hit) {
+
+
+}
+bool cache_manager::write_file (string file_name, const void *buf, int start,int end, int *cache_hit) {
+
+
+}
+bool cache_manager::clean_file (string file_name, string operation) {
+	/* harvest dirty blocks for this file and clean it from the cache*/
+	if(operation == "close") {
+	
+	
+	} else {
+	
+		/*delete, remove dirty block for this file and also remove it from the map */
+	}
+
+}

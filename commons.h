@@ -27,33 +27,56 @@ using namespace std;
 enum request_type {
 	READ = 0,
 	WRITE = 1,
-	CREATE = 2
+	CREATE = 2,
+	DELETE = 3,
+	OPEN = 4,
+	FSTAT = 5
 };
 
 enum return_code {
             OK = 0,
             ERROR = 1
-}; 
+};
+enum file_status {
+        NONE = 0,
+        CREATED = 1,
+        OPENED = 2,
+        WRITING = 3,
+        WRITTEN = 4,
+        READING = 5,
+        READ_ = 6,
+        CLOSED = 7
+};
+
+enum service_type {
+	CLIENT = 0,
+	FILE_SERVER = 1
+};
 
 typedef struct file_access_request_ {
   request_type type;
   uint32_t start_byte;
   uint32_t end_byte;
   int request_id;
-  string req_ipaddr_port;
   string file_name;
+  string req_ipaddr_port;
+  uint32_t strip_width;
+  uint64_t fdis ;
 } file_access_request_t;
 
 typedef struct  file_access_response_ {
   int request_id ;
   return_code code;
   string token;
+  uint32_t start_byte;
+  uint32_t end_byte;
+  uint64_t fdis ; 
+  uint32_t create_time;
+  uint32_t last_modified_time;
+  uint32_t file_size;
+  int stripe_width;
+  vector<string> server_list;
 } file_access_response_t;
-
-enum service_type {
-	CLIENT = 0,
-	FILE_SERVER = 1
-};
 
 typedef struct register_service_request_ {
 	service_type type;
@@ -63,3 +86,34 @@ typedef struct register_service_request_ {
 typedef struct response_ {
 	return_code code;
 } register_service_response_t;
+
+typedef struct permission_ {
+	string type;
+	pair<int,int> start_end;
+} permission;
+
+typedef struct file_store_ {
+        string file_name;
+        string global_permission; /*Permission with which this file was opened*/
+	file_status status;
+	uint32_t create_time;
+	uint32_t last_modified_time;
+	uint32_t file_size;
+	int stripe_width;
+	int fdis;
+        vector<string> server_list;
+	vector<permission> access_permission;
+
+	file_store_(string filename, int stripeWidth) {
+		file_name = filename;
+		global_permission ="";
+		status = CREATED;
+		create_time = 0;
+		last_modified_time = 0;
+		file_size = 0;
+		stripe_width = stripeWidth;
+		fdis = 0;
+	}
+
+} file_info_store;
+

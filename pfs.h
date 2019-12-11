@@ -14,6 +14,12 @@ class meta_data_manager_client;
 extern meta_data_manager_client *mdm_service;
 extern string server_ip_port;
 
+extern map<string,file_info_store*> file_dir;
+
+extern map<int, string> fdis_to_filename_map;
+
+extern map<string,pair<int,int>> token_map;
+
 void initialize(int argc, char *argv[]);
 int pfs_create(const char *filename, int stripe_width);
 

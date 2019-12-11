@@ -4,6 +4,13 @@
 #include "cs_mdm.h"
 
 meta_data_manager_client *mdm_service;
+extern map<string,file_info_store*> file_dir;
+
+extern map<int, string> fdis_to_filename_map;
+
+extern map<string,pair<int,int>> token_map;
+
+
 thread thread_flusher;
 thread thread_harvester;
 thread thread_client_server;
@@ -220,16 +227,13 @@ initialize (int argc, char *argv[]) {
 
 	return;
 }
+
 int pfs_create(const char *filename, int stripe_width) { 
-	create_new_file(filename, stripe_width);
-	 /* Send request to MM 
-	  * 
-	  * return mm lists and add into  the file list along with the permission 
-	  *
-	  * Allocate data in the cache 
-	  * run harvester imidiatly 
-	  *  */
-	return 2;	
+
+	/* We just send the request and 
+	 * MM will create a new file and 
+	 * assign server list according to width */
+	return mm_create_new_file(filename, stripe_width);
 }
 
 int pfs_open(const char *filename, const char mode){
@@ -238,21 +242,118 @@ int pfs_open(const char *filename, const char mode){
 		 * get server list 
 		 *
 		 * */
+	return mm_open_file(filename, mode);
+}
+
+size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit){
+
+	int start = 0, end = 0;
 	
-	return 1;}
+	bool need_permission = true;
 
-size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit){return 1;}
+	/*check if file was opened with read/write */
+	file_info_store *file = file_dir[fdis_to_filename_map[filedes]];
 
-size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){return 1;}
+	
+	/*Iterate over all the permission and check if we already have the permission*/
+  	for(auto it = file->access_permission.begin(); it!=file->access_permission.end();it++) {
+		pair<int,int> s_e = (*it).start_end;
+		if(s_e.first <= offset && s_e.second >= offset+nbyte) {
+			need_permission = false;
+			break;
+		}
+	
+	
+	}	
+	if(need_permission) {
+		if(mm_get_read_permission( filedes, nbyte, offset)<-1) {
+			cout<<"\n Error while getting the permission";
+			return 0;
+		
+		}
+	}
 
-int pfs_close(int filedes){
-	thread_harvester.join();
-	thread_flusher.join();
+	/* read file from then fileserver */
+
+      return c_m->read_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte, cache_hit);
+}
+
+size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){
+	
+         int start = 0, end = 0;
+ 
+         bool need_permission = true;
+ 
+         /*check if file was opened with read/write */
+         file_info_store *file = file_dir[fdis_to_filename_map[filedes]];
+
+	 if(file->global_permission.find("w") != string::npos ) {
+	 	 *cache_hit = 0;
+		 return -1;
+	 }
+ 
+ 
+         /*Iterate over all the permission and check if we already have the permission*/
+         for(auto it = file->access_permission.begin(); it!=file->access_permission.end();it++) {
+                 pair<int,int> s_e = (*it).start_end;
+                 if(s_e.first <= offset && s_e.second >= offset+nbyte) {
+                         need_permission = false;
+			 *cache_hit = 1;
+                         break;
+                 }
+ 		
+ 
+         }
+         if(need_permission) {
+		 *cache_hit = 0;
+                 if(mm_get_write_permission(filedes, nbyte, offset)<-1) {
+                         cout<<"\n Error while getting the permission";
+                         return 0;
+ 
+                 }
+         }
+ 
+         /*at this point we need to write in the cache and harvester will take */	
+	
+	 c_m->write_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte, cache_hit);
+	 file_dir[fdis_to_filename_map[filedes]]->status == WRITTEN;
+	
 	return 1;
 }
 
-int pfs_delete(const char *filename) {return 1;}
+int pfs_close(int filedes){
+
+	/* clean the cache for this file */
+	c_m->clean_file(fdis_to_filename_map[filedes], "close");
+
+	/* remove permission and remove the file from file directory*/
+
+	file_info_store *file = file_dir[fdis_to_filename_map[filedes]];
+	file->access_permission.clear();
+	
+	delete file;
+	file_dir.erase(fdis_to_filename_map[filedes]);
+	fdis_to_filename_map.erase(filedes);
+	return 1;
+}
+
+int pfs_delete(const char *filename) {
+	/* send file delete request to metadata manager */
+	 mm_delete_file(filename);
+	/* clean the cache for this file */
+	c_m->clean_file(filename, "delete");
+
+	file_info_store *file = file_dir[filename];
+	file->access_permission.clear();
+
+	delete file;
+	file_dir.erase(filename);
+	return 1;
+}
 
 int pfs_fstat(int filedes, struct pfs_stat *buf) {
 		/*Add last modifieed in the messageresposen. */
-	return 1;} 
+	mm_get_fstat(fdis_to_filename_map[filedes], buf);	
+	return 1;
+
+} 

@@ -33,34 +33,85 @@ print_request(register_service_request_t *c_req) {
 file_access_response_t* 
 extract_response_from_payload(FileAccessResponse Response) {
 	file_access_response_t *c_response = new file_access_response_t;
-	c_response->request_id = Response.requestid();
-//	c_response->req_status = Response.reqstatus();
-	c_response->token= Response.token();
+	 if(Response.code() == RegisterServiceResponse::OK) {
+                 c_response->code = OK;
+         }
+         if(Response.code() == RegisterServiceResponse::ERROR) {
+                 c_response->code = ERROR;
+         }
+         c_response->request_id = Response.requestid();
+         c_response->token = Response.token();
+         c_response->start_byte = Response.startbyte();
+         c_response->end_byte = Response.endbyte();
+         for(int i = 0; i< Response.serverlist_size(); i++) {
+                 c_response->server_list.push_back(Response.serverlist[i]);
+         }
 	return c_response;
 }
 
 register_service_response_t*
 extract_response_from_payload(RegisterServiceResponse Response) {
         register_service_response_t *c_response = new register_service_response_t;
-        if(Response.code() == RegisterServiceResponse::OK) {
-                c_response->code = OK;
-        }
-        if(Response.code() == RegisterServiceResponse::ERROR) {
-                c_response->code = ERROR;
-        }
+	c_response->request_id = Response.requestid();
+	c_response->token = Response.token();
         return c_response;
+}
+
+request_type
+get_c_type(FileAccessRequest::RequestType type) {
+	switch (type) {
+		case FileAccessRequest::READ:
+			return READ;
+		case FileAccessRequest::WRITE:
+			return WRITE;
+		case FileAccessRequest::CREATE:
+			return CREATE;
+		case FileAccessRequest::DELETE:
+			return DELETE;
+		case FileAccessRequest::OPEN:
+			return OPEN;
+		case FileAccessRequest::FSTAT:
+			return FSTAT;
+		default:
+			cout<<"get_ctype: wrong request type";	
+	}
+
+}
+
+FileAccessRequest::RequestType
+get_grpc_type (request_type type) {
+	switch (type) {
+		case READ:
+			return FileAccessRequest::READ;
+		case WRITE:
+			return FileAccessRequest::WRITE;
+		case CREATE:
+			return FileAccessRequest::CREATE;
+		case DELETE:
+			return FileAccessRequest::DELETE;
+		case OPEN:
+			return FileAccessRequest::OPEN;
+		case FSTAT:
+			return FileAccessRequest::FSTAT;
+		default:
+			cout<<"get_ctype: wrong request type";
+	}
 }
 
 
 void 
 make_req_payload (FileAccessRequest *payload, 
 		file_access_request_t *req) {
+
+	payload->set_type(get_grpc_type(req->type));
 	payload->set_startbyte(req->start_byte);
 	payload->set_endbyte(req->end_byte);
 	payload->set_requestid(req->request_id);
 	payload->set_filename(req->file_name);
 	payload->set_reqipaddrport(req->req_ipaddr_port);
+	payload->set_stripwidth(req->strip_width);
 }
+
 void
 make_req_payload (RegisterServiceRequest *payload,
                 register_service_request_t *req) {
@@ -69,9 +120,6 @@ make_req_payload (RegisterServiceRequest *payload,
         }
         payload->set_ipport(req->ip_port);
 }
-
-
-
 		
 
 file_access_response_t* meta_data_manager_client::file_access_request_handler( file_access_request_t *c_req) {
@@ -99,6 +147,7 @@ file_access_response_t* meta_data_manager_client::file_access_request_handler( f
 
 
 }
+
 register_service_response_t* meta_data_manager_client::register_service_handler( register_service_request_t *c_req) {
         RegisterServiceRequest ReqPayload;
         RegisterServiceResponse Response;
@@ -123,27 +172,254 @@ register_service_response_t* meta_data_manager_client::register_service_handler(
         }
 }
 
-
-
-
-
-int create_new_file(const char *filename, int stripe_width) {
+int mm_create_new_file(const char *filename, int stripe_width) {
 	file_access_request_t *c_req = new file_access_request_t;
 	file_access_response_t *c_response = NULL;
 
 	c_req->start_byte  = 0;
-	c_req->end_byte = 10;
+	c_req->end_byte = 0;
 	c_req->request_id = get_random_number();
-	c_req->file_name = "veer.c";
-	c_req->req_ipaddr_port = "localhost:5001";
+	c_req->file_name = filename;
+	c_req->req_ipaddr_port = client_server_ip_port;
+	c_req->type = CREATE;
 	
 	c_response = mdm_service->file_access_request_handler(c_req);
+#ifdef DEBUG_FLAG
 	cout<<"Response recieved";
 	print_response(c_response);
-
-	return 0;
+#endif
+	if(c_response->code != OK) {
+		cout<< "Error occured, possibly similar file exists";
+		delete(c_req);
+		delete(c_response);
+		return -1;
+	} else {
+	
+		/*Create the file record in file*/
+		file_info_store *new_file = new file_info_store(filename, stripe_width);
+		file_dir[filename] = new_file;
+	}
+	delete(c_req);
+	delete(c_response);
+	return 1;
 }
-void write_file_to_server(cache_block* cb,  int start, int end, string server_ip){
-return;
+
+
+int mm_open_file(const char *filename, const char mode)
+{
+	file_info_store *file = NULL;
+	if(file_dir.find(filename) != file_dir.end()) {
+		cout<<"This file is already opended";
+		return -1;
+	}
+
+	file_access_request_t *c_req = new file_access_request_t;
+	file_access_response_t *c_response = NULL;
+
+	c_req->start_byte  = 0;
+	c_req->end_byte = 0;
+	c_req->request_id = get_random_number();
+	c_req->file_name = filename;
+	c_req->req_ipaddr_port = client_server_ip_port;
+	c_req->type = OPEN;
+
+	c_response = mdm_service->file_access_request_handler(c_req);
+#ifdef DEBUG_FLAG
+	cout<<"Response recieved";
+	print_response(c_response);
+#endif
+
+	if(c_response->code != OK) {
+		cout<< "Error occured, possibly similar file exists";
+		delete(c_req);
+		delete(c_response);
+		return -1;
+	} else {
+		file =  new file_info_store(c_response->filename, c_response->stripe_width);
+		file->file_name = c_response->file_name;
+		file->global_permission = mode;
+		file->status = OPENED;
+		file->create_time = c_response->create_time;
+		file->last_modified_time = c_response->last_modified_time;
+		file->file_size = c_response->file_size;
+		file->stripe_width = c_response->stripe_width;
+		file->fdis= c_response->fdis;
+		for(int i = 0; i < c_response->server_list.size(); i++) {
+			file->server_list.push_back(c_response->server_list[i]);
+		}
+
+		file_dir[filename] = file;
+		fdis_to_filename_map[c_response->fdis] = filename;
+	}
+	delete(c_req);
+	delete(c_response);
+	return file->fdis;
+}
+
+int mm_get_read_permission (int fdis, size_t nbyte, off_t offset) {
+
+	if(file_dir.find(fdis_to_filename_map[fdis]) == file_dir.end()) {
+		if((file_dir.find(fdis_to_filename_map[fdis])->second)->status < OPENED){
+			cout<<"This file is not opened at all";
+		}
+		return -1;
+	}
+
+	file_access_request_t *c_req = new file_access_request_t;
+	file_access_response_t *c_response = NULL;
+
+	c_req->start_byte  = offset;
+	c_req->end_byte = offset+bytes-1; /*carefull on -1.. offset 0 and byte 10 then it should be 0 start and end 9*/
+	c_req->request_id = get_random_number();
+	c_req->file_name = fdis_to_filename_map[fdis];
+	c_req->req_ipaddr_port = client_server_ip_port;
+	c_req->type = READ;
+
+	c_response = mdm_service->file_access_request_handler(c_req);
+
+#ifdef DEBUG_FLAG
+	cout<<"Response recieved";
+	print_response(c_response);
+#endif
+
+	if(c_response->code != OK) {
+		cout<< "Error occured, possibly similar file exists";
+		delete(c_req);
+		delete(c_response);
+		return -1;
+	}
+	else { 
+		/* Store the token in map and add that token in file information*/
+		permission access_permission;
+		access_permission.type = "r";
+		access_permission.start_end = make_pair(c_response->start_byte, c_response->end_byte);
+		file_dir[fdis_to_filename_map[fdis]]->access_permission.push_back(access_permission);
+		file_status status = file_dir[fdis_to_filename_map[fdis]]->status;
+		file_dir[fdis_to_filename_map[fdis]]->status == READING;
+			
+		return 1; }
+	return 1;
+}
+
+int mm_get_write_permission (int fdis, size_t nbyte, off_t offset) {
+
+	if(file_dir.find(fdis_to_filename_map[fdis]) == file_dir.end()) {
+		if((file_dir.find(fdis_to_filename_map[fdis])->second)->status < OPENED){
+			cout<<"This file is not opened at all";
+		}
+		return -1;
+	}
+
+	file_access_request_t *c_req = new file_access_request_t;
+	file_access_response_t *c_response = NULL;
+
+	c_req->start_byte  = offset;
+	c_req->end_byte = offset+bytes-1; /*carefull on -1.. offset 0 and byte 10 then it should be 0 start and end 9*/
+	c_req->request_id = get_random_number();
+	c_req->file_name = fdis_to_filename_map[fdis];
+	c_req->req_ipaddr_port = client_server_ip_port;
+	c_req->type = WRITE;
+
+	c_response = mdm_service->file_access_request_handler(c_req);
+
+#ifdef DEBUG_FLAG
+	cout<<"Response recieved";
+	print_response(c_response);
+#endif
+
+	if(c_response->code != OK) {
+		cout<< "Error occured, possibly similar file exists";
+		delete(c_req);
+		delete(c_response);
+		return -1;
+	}
+	else { 
+		/* Store the token in map and add that token in file information*/
+		permission access_permission;
+		access_permission.type = "rw";
+		access_permission.start_end = make_pair(c_response->start_byte, c_response->end_byte);
+		file_dir[fdis_to_filename_map[fdis]]->access_permission.push_back(access_permission);
+		file_dir[fdis_to_filename_map[fdis]]->status == WRITING;
+
+		return 1;
+	}
+	return 1;
+}
+
+int mm_delete_file (const char *filename) {
+      
+      	file_access_request_t *c_req = new file_access_request_t;
+        file_access_response_t *c_response = NULL;
+
+        c_req->start_byte  = 0;
+        c_req->end_byte = 0;
+        c_req->request_id = get_random_number();
+        c_req->file_name = filename;
+        c_req->req_ipaddr_port = client_server_ip_port;
+        c_req->type = DELETE;
+
+        c_response = mdm_service->file_access_request_handler(c_req);
+#ifdef DEBUG_FLAG
+        cout<<"Response recieved";
+        print_response(c_response);
+#endif
+        if(c_response->code != OK) {
+                cout<< "Error occured, possibly similar file exists";
+                delete(c_req);
+                delete(c_response);
+                return -1;
+        } else {
+#ifdef DEBUG_FLAG
+		cout<< "File is delete request successfull";
+#endif
+        }
+        delete(c_req);
+        delete(c_response);
+
+	//TODO SEND file delete request to file server
+
+
+
+        return 1;
+}
+
+int mm_get_fstat(string filename, struct pfs_stat *buf)
+{
+	if(file_dir.find(filename) != file_dir.end()) {
+		cout<<"This file is already opended";
+		return -1;
+	}
+
+	file_access_request_t *c_req = new file_access_request_t;
+	file_access_response_t *c_response = NULL;
+
+	c_req->start_byte  = 0;
+	c_req->end_byte = 0;
+	c_req->request_id = get_random_number();
+	c_req->file_name = filename;
+	c_req->req_ipaddr_port = client_server_ip_port;
+	c_req->type = FSTAT;
+
+	c_response = mdm_service->file_access_request_handler(c_req);
+#ifdef DEBUG_FLAG
+	cout<<"Response recieved";
+	print_response(c_response);
+#endif
+
+	if(c_response->code != OK) {
+		cout<< "Error occured, possibly similar file exists";
+		delete(c_req);
+		delete(c_response);
+		return -1;
+	} else {
+		file_info_store *file = NULL;
+
+		buf->pst_mtime = c_response->last_modified_time;
+		buf->pst_mtime = c_response->create_time;
+		buf->pst_size = c_response->file_size
+	}
+	delete(c_req);
+	delete(c_response);
+	return 1;
 }
 
