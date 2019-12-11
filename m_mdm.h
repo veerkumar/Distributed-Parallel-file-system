@@ -27,21 +27,25 @@ using ClientServer::FilePermissionRevokeResponse;
 using ClientServer::ClientServerService;
 
 
-
-enum permission_type {
-        READ_PERMISSION = 0,
-        WRITE_PERMISSION = 1
+struct permission{
+	int start_byte;
+	int end_byte;
+	char access_type;
+	string client_ipaddr_port;
 };
+typedef struct file_list_{
 
+	string name;
+	int fileID;
+	int size;
+	long int creation_time;
+	long int modification_time;
+	int stripe_width;
+	vector<permission> access_permissions;
+	vector <string> server_name;
+}file_list_t;
 
-struct permission_info {
-        int start_byte;
-        int end_byte;
-        permission_type type;
-        vector<string> token;   /* It will be used to revoke a permission,
-                                   vector as More the one reader can be accessing the file
-                                   */
-};
+vector<file_list_t> fileList;
 
 class revoke_client {
         private:
@@ -49,7 +53,7 @@ class revoke_client {
          public:
                  revoke_client(std::shared_ptr<Channel> channel): stub_(ClientServerService::NewStub(channel)){};
 
-        void send_revoke_request ();
+        revoke_access_response_t* send_revoke_request (revoke_access_request_t *c_req);
 
 
 };
@@ -58,13 +62,13 @@ class revoke_client {
  	public:
                  vector<string> server_list;
 		 map<string,revoke_client*> client_connection;
-                 map<string,vector<string>> file_to_server_dist_map;
-                 map<string,vector<permission_info>> map_file_to_server_dist;
-                 map<string,string> token_to_client_map;  /* will fetch clinet info */
+                 //map<string,vector<string>> file_to_server_dist_map;
+                 //map<string,vector<permission_info>> map_file_to_server_dist;
+                 //map<string,string> token_to_client_map;  /* will fetch clinet info */
                  mutex mut_server_list;
-                 mutex mut_file_to_server_dist_map;
+                 //mutex mut_file_to_server_dist_map;
                  
-                 bool add_server_to_file_to_server_dist_map(string file_name, string server);
+                 //bool add_server_to_file_to_server_dist_map(string file_name, string server);
                  
                  bool add_server_to_server_list(string server) ;
  };

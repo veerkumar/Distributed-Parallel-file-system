@@ -34,7 +34,7 @@ message FileAccessRequest {
   uint64 RequestId = 4;  
   string FileName = 5;
   string ReqIpaddrPort = 6;
-  uint32 stripwidth = 8;
+  uint32 stripewidth = 7;
 }
 
 /* The response message containing request status and token if success 
@@ -52,7 +52,8 @@ message  FileAccessResponse {
   uint64 createTime = 6;
   uint64 lastUpdateTime = 7;
   uint32 fileSize = 8;
-  repeated string serverList = 9;
+  uint32 fileID = 9;
+  repeated string serverList = 10;
 }
 
 /*As soon as client or server start, it need to register service with the meta data manager*/
@@ -78,7 +79,7 @@ message RegisterServiceResponse {
 message UpdateLastModifiedServiceRequest {
         string fileName = 1;
 	uint64  time = 2;
-	uint32  NewByteWwrote = 3;
+	uint32  NewByteWrote = 3;
 }
 
 message UpdateLastModifiedServiceResponse{
@@ -88,4 +89,3 @@ message UpdateLastModifiedServiceResponse{
 	}
 	ReturnCode code = 1;
 }
-

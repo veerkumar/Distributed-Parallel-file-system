@@ -63,3 +63,46 @@ typedef struct register_service_request_ {
 typedef struct response_ {
 	return_code code;
 } register_service_response_t;
+
+
+/*
+New Data Structs
+*/
+
+enum revoke_type {
+	READ_REVOKE = 0,
+	WRITE_REVOKE = 1,
+	DELETE_REVOKE = 2
+};
+
+
+typedef struct revoke_access_request_ {
+  revoke_type type;
+  uint32_t start_byte;
+  uint32_t end_byte;
+  int request_id;
+  string file_name;
+  string token;
+} revoke_access_request_t;
+
+typedef struct  revoke_access_response_ {
+  int request_id ;
+  return_code code;
+  string token;
+  uint32_t start_byte;
+  uint32_t end_byte;
+} revoke_access_response_t;
+
+
+
+
+typedef struct update_modified_access_request_ {
+  string file_name;
+  uint64_t modified_time;
+  int last_address;
+} update_modified_access_request_t;
+
+typedef struct  update_modified_access_response_ {
+  return_code code;
+} update_modified_access_response_t;
+
