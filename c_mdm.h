@@ -1,6 +1,6 @@
 #include "cache_manager.h"
 #include "meta_data_manager_services.grpc.pb.h"
-#include "config.h"
+
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -31,14 +31,23 @@ class meta_data_manager_client {
 
 extern meta_data_manager_client *mdm_service;
 
-int create_new_file (const char *filename, int stripe_width);
-void write_file_to_server(cache_block* cb,  int start, int end, string server_ip);
-
-
-
 int mm_create_new_file(const char *filename, int stripe_width) ;
 int mm_open_file(const char *filename, const char mode);
  int mm_get_read_permission (int fdis, size_t nbyte, off_t offset);
  int mm_get_write_permission (int fdis, size_t nbyte, off_t offset);
 int mm_delete_file(const char *filename);
 int mm_get_fstat(string filename, struct pfs_stat *buf);
+
+extern string client_server_ip_port ;
+extern map<string,file_info_store*> file_dir;
+
+extern map<int, string> fdis_to_filename_map;
+
+extern map<string,pair<int,int>> token_map;
+
+
+FileAccessRequest::RequestType
+get_grpc_type (request_type type); 
+
+request_type
+get_c_type(FileAccessRequest::RequestType type);

@@ -78,6 +78,24 @@ typedef struct  file_access_response_ {
   vector<string> server_list;
 } file_access_response_t;
 
+typedef struct fs_read_write_request_ {
+  request_type type;
+  uint32_t start_byte;
+  uint32_t end_byte;
+  int request_id;
+  string file_name;
+  string req_ipaddr_port;
+  char *data;
+} fs_read_write_request_t;
+
+typedef struct  fs_read_write_response_ {
+  int request_id ;
+  return_code code;
+  int size ;
+  char *data;
+} fs_read_write_response_t;
+
+
 typedef struct register_service_request_ {
 	service_type type;
 	string ip_port;
@@ -117,3 +135,4 @@ typedef struct file_store_ {
 
 } file_info_store;
 
+extern int get_random_number ();

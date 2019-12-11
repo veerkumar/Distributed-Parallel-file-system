@@ -1,6 +1,5 @@
 #include "commons.h"
 #include "cs_mdm.h"
-#include "client_server.h"
 
 string client_server_ip_port ;
 string ipAddress;

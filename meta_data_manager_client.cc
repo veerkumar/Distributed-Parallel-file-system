@@ -1,4 +1,5 @@
 #include "commons.h"
+#include "config.h"
 #include "c_mdm.h"
 
 
@@ -33,10 +34,10 @@ print_request(register_service_request_t *c_req) {
 file_access_response_t* 
 extract_response_from_payload(FileAccessResponse Response) {
 	file_access_response_t *c_response = new file_access_response_t;
-	 if(Response.code() == RegisterServiceResponse::OK) {
+	 if(Response.code() == FileAccessResponse::OK) {
                  c_response->code = OK;
          }
-         if(Response.code() == RegisterServiceResponse::ERROR) {
+         if(Response.code() == FileAccessResponse::ERROR) {
                  c_response->code = ERROR;
          }
          c_response->request_id = Response.requestid();
@@ -44,17 +45,22 @@ extract_response_from_payload(FileAccessResponse Response) {
          c_response->start_byte = Response.startbyte();
          c_response->end_byte = Response.endbyte();
          for(int i = 0; i< Response.serverlist_size(); i++) {
-                 c_response->server_list.push_back(Response.serverlist[i]);
+                 c_response->server_list.push_back(Response.serverlist()[i]);
          }
 	return c_response;
 }
 
 register_service_response_t*
 extract_response_from_payload(RegisterServiceResponse Response) {
-        register_service_response_t *c_response = new register_service_response_t;
-	c_response->request_id = Response.requestid();
-	c_response->token = Response.token();
-        return c_response;
+	register_service_response_t *c_response = new register_service_response_t;
+	if(Response.code() == RegisterServiceResponse::OK) {
+		c_response->code = OK;
+	}
+	if(Response.code() == RegisterServiceResponse::ERROR) {
+		c_response->code = ERROR;
+	}
+
+	return c_response;
 }
 
 request_type
@@ -235,8 +241,8 @@ int mm_open_file(const char *filename, const char mode)
 		delete(c_response);
 		return -1;
 	} else {
-		file =  new file_info_store(c_response->filename, c_response->stripe_width);
-		file->file_name = c_response->file_name;
+		file =  new file_info_store(filename, c_response->stripe_width);
+		file->file_name = filename;
 		file->global_permission = mode;
 		file->status = OPENED;
 		file->create_time = c_response->create_time;
@@ -269,7 +275,7 @@ int mm_get_read_permission (int fdis, size_t nbyte, off_t offset) {
 	file_access_response_t *c_response = NULL;
 
 	c_req->start_byte  = offset;
-	c_req->end_byte = offset+bytes-1; /*carefull on -1.. offset 0 and byte 10 then it should be 0 start and end 9*/
+	c_req->end_byte = offset + nbyte - 1; /*carefull on -1.. offset 0 and byte 10 then it should be 0 start and end 9*/
 	c_req->request_id = get_random_number();
 	c_req->file_name = fdis_to_filename_map[fdis];
 	c_req->req_ipaddr_port = client_server_ip_port;
@@ -314,7 +320,7 @@ int mm_get_write_permission (int fdis, size_t nbyte, off_t offset) {
 	file_access_response_t *c_response = NULL;
 
 	c_req->start_byte  = offset;
-	c_req->end_byte = offset+bytes-1; /*carefull on -1.. offset 0 and byte 10 then it should be 0 start and end 9*/
+	c_req->end_byte = offset + nbyte - 1; /*carefull on -1.. offset 0 and byte 10 then it should be 0 start and end 9*/
 	c_req->request_id = get_random_number();
 	c_req->file_name = fdis_to_filename_map[fdis];
 	c_req->req_ipaddr_port = client_server_ip_port;
@@ -416,7 +422,7 @@ int mm_get_fstat(string filename, struct pfs_stat *buf)
 
 		buf->pst_mtime = c_response->last_modified_time;
 		buf->pst_mtime = c_response->create_time;
-		buf->pst_size = c_response->file_size
+		buf->pst_size = c_response->file_size;
 	}
 	delete(c_req);
 	delete(c_response);

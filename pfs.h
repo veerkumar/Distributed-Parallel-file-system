@@ -1,5 +1,7 @@
-#include "config.h"
+#ifndef PFS_H
+#define PFS_H
 
+#include "config.h"
 #define HARVEST_TIME 30    // In second
 /* Make room for new cache block */
 #define FLUSH_HIGH_MARK 90   // kick flusher if is more then high mark %
@@ -34,3 +36,5 @@ int pfs_close(int filedes);
 int pfs_delete(const char *filename);
 
 int pfs_fstat(int filedes, struct pfs_stat *buf); // Check the config file for the definition of pfs_stat structure
+
+#endif

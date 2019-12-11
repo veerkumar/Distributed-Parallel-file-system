@@ -2,13 +2,14 @@
 #include "pfs.h"
 #include "c_mdm.h"
 #include "cs_mdm.h"
+#include "file_server_client.h"
 
 meta_data_manager_client *mdm_service;
-extern map<string,file_info_store*> file_dir;
+map<string,file_info_store*> file_dir;
 
-extern map<int, string> fdis_to_filename_map;
+map<int, string> fdis_to_filename_map;
 
-extern map<string,pair<int,int>> token_map;
+map<string,pair<int,int>> token_map;
 
 
 thread thread_flusher;
@@ -75,7 +76,8 @@ void harvest_block(cache_block *cb) {
 				temp_end = (range.second >=
 						((server_index+1)*BLOCK_SIZE))?((server_index+1)*BLOCK_SIZE - 1):range.second;
 			 //TODO write_file_to_server function implemention is not done yet	
-				write_file_to_server(cb,
+			       
+				fs_service->fs_write_file_to_server(cb,
 						temp_start,
 						temp_end,
 						file_recep[server_index]);
