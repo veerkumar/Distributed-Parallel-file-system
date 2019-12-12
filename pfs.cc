@@ -34,9 +34,6 @@ set_ipaddr_port() {
                         if(temp_addr->ifa_addr->sa_family == AF_INET) {
                                 if(strcmp(temp_addr->ifa_name, INTERFACE)==0){
                                         ipAddress=inet_ntoa(((struct sockaddr_in*)temp_addr->ifa_addr)->sin_addr);
-#ifdef DEBUG_FLAG                               
-                                        cout<<"\n IPaddress"<<ipAddress;
-#endif
                                 }
                         }
                         temp_addr = temp_addr->ifa_next;
@@ -54,7 +51,7 @@ set_ipaddr_port() {
         client_server_ip_port.append(to_string(port));
 
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<": "<<client_server_ip_port;
+                 cout<<"\n"<<__func__ <<":  client server ip assigned : "<<client_server_ip_port;
 #endif
 }
 
@@ -147,7 +144,7 @@ void harvester_process() {
 */
 void flusher() {
 #ifdef DEBUG_FLAG
-	cout<<"\nfluser: starting executing";
+	cout<<"\n\nfluser: starting executing";
 #endif
 	int filled_per = 0; 
 	int reduce_to_sz = 0;	
@@ -186,12 +183,12 @@ void flusher() {
 
 void flusher_process(){
 #ifdef DEBUG_FLAG
-		cout<<"\nFluser process created";
+                 cout<<"\n\n"<<__func__ <<": process created";
 #endif
 	while(1) {
 		std::this_thread::sleep_for(std::chrono::seconds(FLUSHER_TIMEOUT));
 #ifdef DEBUG_FLAG
-		cout<<"\nflusher_process: flusher process Timeout";
+                 cout<<"\n"<<__func__ <<":  flusher_process: flusher process Timeout ";
 #endif
 		flusher();
 	}
@@ -201,7 +198,7 @@ void
 register_client_and_start_client_server_process(){
 
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<": starting the client server";
+                 cout<<"\n\n"<<__func__ <<": starting the client server";
 #endif
 	start_client_server(); // it will never return
 	return;
@@ -210,7 +207,7 @@ register_client_and_start_client_server_process(){
 void
 initialize (int argc, char *argv[]) {
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<": initilaization ";
+                 cout<<"\n \n"<<__func__ <<": initilaizating";
 #endif
 	set_ipaddr_port();
 	/* Intialize cache */
@@ -242,7 +239,7 @@ initialize (int argc, char *argv[]) {
         c_response = mdm_service->register_service_handler(c_req);
 
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<": after client register";
+                 cout<<"\n"<<__func__ <<": After client registeration ";
 #endif
 
 	return;
@@ -253,6 +250,9 @@ int pfs_create(const char *filename, int stripe_width) {
 	/* We just send the request and 
 	 * MM will create a new file and 
 	 * assign server list according to width */
+#ifdef DEBUG_FLAG
+                 cout<<"\n \n"<<__func__ <<": Sending file create request ";
+#endif
 	return mm_create_new_file(filename, stripe_width);
 }
 
@@ -262,6 +262,9 @@ int pfs_open(const char *filename, const char mode){
 		 * get server list 
 		 *
 		 * */
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Sending file open request ";
+#endif
 	return mm_open_file(filename, mode);
 }
 
@@ -274,7 +277,9 @@ size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_h
 	/*check if file was opened with read/write */
 	file_info_store *file = file_dir[fdis_to_filename_map[filedes]];
 
-	
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": checking file permission";
+#endif	
 	/*Iterate over all the permission and check if we already have the permission*/
   	for(auto it = file->access_permission.begin(); it!=file->access_permission.end();it++) {
 		pair<int,int> s_e = (*it).start_end;
@@ -284,11 +289,18 @@ size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_h
 		}
 	}	
 	if(need_permission) {
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Not sufficient permission, sending permission aquire request";
+#endif
 		if(mm_get_read_permission( filedes, nbyte, offset)<-1) {
 			cout<<"\n Error while getting the permission";
 			return 0;
 		}
 	}
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Permission accquired";
+                 cout<<"\n"<<__func__ <<": Processing read on fildes: "<<filedes;
+#endif
 
 	/* read file from then cache using cache_manager */
 
