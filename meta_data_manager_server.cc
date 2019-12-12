@@ -6,6 +6,10 @@
 meta_data_manager *m_m;
 
 bool meta_data_manager::add_server_to_server_list(string server) {
+#ifdef DEBUG_FLAG
+	cout<<"\n\n"<<__func__<<" called to add server to the list";
+
+#endif
 	mut_server_list.lock();
 	server_list.push_back(server);	
 	mut_server_list.unlock();	
@@ -33,6 +37,10 @@ extract_response_from_payload(FilePermissionRevokeResponse Response) {
 
 revoke_access_response_t* revoke_client::send_revoke_request (revoke_access_request_t *c_req) {
 
+#ifdef DEBUG_FLAG
+	cout<<"\n\n"<<__func__<<" called to send revoke request for "<<c_req->file_name;
+
+#endif
 		FilePermissionRevokeResponse Response;
 		FilePermissionRevokeRequest Req ;
 		ClientContext Context;
@@ -70,16 +78,15 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 
     Status fileAccessRequestHandler (ServerContext* context,const  FileAccessRequest* request,
             FileAccessResponse* reply) override {
-	std::cout<<"\n"<<__func__<<"Got the message ";
+#ifdef DEBUG_FLAG
+	std::cout<<"\n\n"<<__func__<<" Got the message ";
 
-	cout<<"\n"<<request->reqipaddrport(); 
-	cout<<"\n"<<request->startbyte(); 
-	cout<<"\n"<<request->endbyte();
-	cout<<"\n"<<request->requestid(); 
-	cout<<"\n"<<request->filename();
-	cout<<"\n"<<request->reqipaddrport();
-	cout<<"\n"<<request->reqipaddrport();
-	
+	std::cout<<"\n"<<__func__<<" Request IP address = "<<request->reqipaddrport(); 
+	std::cout<<"\n"<<__func__<<" Request Start Byte = "<<request->startbyte(); 
+	std::cout<<"\n"<<__func__<<" Request END Byte = "<<request->endbyte();
+	std::cout<<"\n"<<__func__<<" Request ID Byte = "<<request->requestid(); 
+	std::cout<<"\n"<<__func__<<" Request File Name = "<<request->filename();
+#endif
 	reply->set_requestid(request->requestid());
 	int i = 0;
 	std::vector<file_list_t>::iterator it; 
@@ -90,7 +97,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	vector<int>index;
 	if (request->type() == FileAccessRequest::CREATE) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<__func__<<"MM Server gets create request";
+	cout<<"\n"<<__func__<<" MM Server gets create request for "<<request->filename();
 
 #endif
 	    fileListLock.lock();
@@ -100,7 +107,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
     
                 if(it->name.compare(request->filename())==0){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"ERROR File Exists "<<request->filename();
+	cout<<"\n"<<__func__<<" ERROR File Exists ->"<<request->filename();
 
 #endif
                     reply->set_code(FileAccessResponse::ERROR);
@@ -122,13 +129,13 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    }
 	    fileList.push_back(n1);
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"File Added "<<request->filename();
+	cout<<"\n"<<__func__<<" File Added ->"<<request->filename();
 #endif
 	    fileListLock.unlock();
         }
         else if (request->type() == FileAccessRequest::DELETE) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"MM Server gets delete request";
+	cout<<"\n"<<__func__<<" MM Server gets delete request for "<<request->filename();
 
 #endif
 	    revoke_access_request_t *c_req = new revoke_access_request_t;
@@ -160,7 +167,8 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
         }
         else if (request->type() == FileAccessRequest::WRITE) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"MM Server gets write request";
+	cout<<"\n"<<__func__<<" MM Server gets write request for "<<request->filename();
+	cout<<"\n"<<__func__<<" Permission CHECK!!!!";
 
 #endif
 	    revoke_access_request_t *c_req = new revoke_access_request_t;
@@ -186,7 +194,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		                i++;
 		                if(it2->start_byte>=request->startbyte() && it2->end_byte<=request->endbyte()){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 1Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 1 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif
 				    if(it2->access_type=='r')
@@ -202,7 +210,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 				    
 		            }else if(it2->start_byte<request->startbyte() && it2->end_byte<=request->endbyte()){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 2 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 2 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif
 				if(it2->access_type=='r')
@@ -215,12 +223,17 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 				c_req->file_name=request->filename();
 				c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 				permission_del.push_back(*it2);
-				if(c_response->code==PARTIAL)
+				if(c_response->code==PARTIAL){
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" PARTIAL";
+
+#endif
 		                	permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
+}
 
 		            }else if(it2->start_byte>=request->startbyte() && it2->end_byte>request->endbyte()){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 3 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 3 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif		                			
 				if(it2->access_type=='r')
@@ -234,12 +247,17 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 				c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 				
 		                permission_del.push_back(*it2);
-				if(c_response->code==PARTIAL)
+				if(c_response->code==PARTIAL){
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" PARTIAL";
+
+#endif
 		                	permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+				}
 
 		            }else if(it2->start_byte<request->startbyte() && it2->end_byte>request->endbyte()){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 4 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 4 for "<<request->filename()<<" Conflict with"<<it2->client_ipaddr_port;
 
 #endif
 		                if(it2->access_type=='r')
@@ -254,6 +272,10 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 			        
 		                permission_del.push_back(*it2);
 				if(c_response->code==PARTIAL){	
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" PARTIAL";
+
+#endif
 				        permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
 				        permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
 				}
@@ -282,7 +304,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
         else if (request->type() == FileAccessRequest::READ) {
 
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"MM Server gets read request";
+	cout<<"\n"<<__func__<<" MM Server gets read request";
 
 #endif
 	    revoke_access_request_t *c_req = new revoke_access_request_t;
@@ -308,7 +330,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		                if(it2->start_byte>=request->startbyte() && it2->end_byte<=request->endbyte()){
 		                    if(it2->access_type=='w'){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 1 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 1 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif
 		                        c_req->type=WRITE_REVOKE;
@@ -322,7 +344,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		                }else if(it2->start_byte<request->startbyte() && it2->end_byte<=request->endbyte()){
 		                    if(it2->access_type=='w'){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 2 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 2 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif
 		                        c_req->type=WRITE_REVOKE;
@@ -334,7 +356,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 					permission_del.push_back(*it2);
 					if(c_response->code==PARTIAL){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"PARTIAL";
+	cout<<"\n"<<__func__<<" PARTIAL";
 
 #endif
 		                        	permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
@@ -343,7 +365,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		                }else if(it2->start_byte>=request->startbyte() && it2->end_byte>request->endbyte()){
 		                    if(it2->access_type=='w'){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 3 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 3 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif
 		                        c_req->type=WRITE_REVOKE;
@@ -355,7 +377,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 					permission_del.push_back(*it2);
 					if(c_response->code==PARTIAL){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"PARTIAL";
+	cout<<"\n"<<__func__<<" PARTIAL";
 
 #endif
 		                        	permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
@@ -364,7 +386,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		                } else if(it2->start_byte<request->startbyte() && it2->end_byte>request->endbyte()){
 		                    if(it2->access_type=='w'){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Case 4 Conflict with"<<it2->client_ipaddr_port;
+	cout<<"\n"<<__func__<<" Case 4 for "<<request->filename()<<" Conflict with "<<it2->client_ipaddr_port;
 
 #endif
 		                        c_req->type=WRITE_REVOKE;
@@ -377,7 +399,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		                        permission_del.push_back(*it2);
 					if(c_response->code==PARTIAL){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"PARTIAL";
+	cout<<"\n"<<__func__<<" PARTIAL";
 
 #endif
 				                permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
@@ -409,14 +431,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
         }
         else if (request->type() == FileAccessRequest::OPEN) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"MM Server gets open request";
+	cout<<"\n"<<__func__<<" MM Server gets open request";
 
 #endif
 	    reply->set_code(FileAccessResponse::ERROR);
 	    for(it=fileList.begin();it != fileList.end(); it++){
 		if(it->name.compare(request->filename())==0){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"FILE FOUND";
+	cout<<"\n"<<__func__<<" FILE Found";
 
 #endif
 		    pthread_mutex_lock(&(it->fileLock));;
@@ -433,14 +455,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
         }
         else if (request->type() == FileAccessRequest::FSTAT) {
 #ifdef DEBUG_FLAG
-	cout<<"MM Server gets FSTAT request";
+	cout<<"\n"<<__func__<<" MM Server gets FSTAT request";
 
 #endif
 	    reply->set_code(FileAccessResponse::ERROR);
 	    for(it=fileList.begin();it != fileList.end(); it++){
 		if(it->name.compare(request->filename())==0){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"FILE FOUND";
+	cout<<"\n"<<__func__<<" FILE Found";
 
 #endif
 		    pthread_mutex_lock(&(it->fileLock));
@@ -465,10 +487,10 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 
      Status registerServiceHandler(ServerContext* context,const  RegisterServiceRequest* request, RegisterServiceResponse* reply) override {
 #ifdef DEBUG_FLAG
-	std::cout<<"\n"<<__func__<< "Got the message";
+	std::cout<<"\n\n"<<__func__<< " Got the message";
 
-	cout<<"\n"<<request->type();
-	cout<<"\n"<<request->ipport();
+	std::cout<<"\n"<<__func__<< " Request type = "<< request->type();
+	std::cout<<"\n"<<__func__<< " IP address = "<< request->ipport();
 #endif
 	if(request->type() == RegisterServiceRequest::CLIENT) {
 	   mut_client_list.lock();
@@ -476,7 +498,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	   reply->set_code(RegisterServiceResponse::OK);
 	   mut_client_list.unlock();
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"CLIENT registered";
+	std::cout<<"\n"<<__func__<< " CLIENT registered";
 	
 #endif
 	}
@@ -484,9 +506,9 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    m_m->add_server_to_server_list(request->ipport());
 	    reply->set_code(RegisterServiceResponse::OK);
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Server registered";
+	std::cout<<"\n"<<__func__<< " Server registered. The list are:";
 	for(auto it= m_m->server_list.begin(); it!= m_m->server_list.end();it++)
-		cout <<"\nServer" << *it ;
+		std::cout<<"\n"<<__func__<< " Server" << *it ;
 #endif
 	}
 	return Status::OK;
@@ -495,9 +517,9 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 
     Status updateLastModifiedServiceHandler(ServerContext* context,const  UpdateLastModifiedServiceRequest* request, UpdateLastModifiedServiceResponse *reply) override {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<__func__<<"Got the message";
-	cout<<"\n Modified time= "<<request->time();
-	cout<<"\n Byte wrote= "<<request->newbytewrote();
+	cout<<"\n"<<__func__<<" Got the message";
+	cout<<"\n"<<__func__<<" Modified time= "<<request->time();
+	cout<<"\n"<<__func__<<" Byte wrote= "<<request->newbytewrote();
 #endif
 	std::vector<file_list_t>::iterator it; 
 	for(it=fileList.begin();it != fileList.end(); it++){
