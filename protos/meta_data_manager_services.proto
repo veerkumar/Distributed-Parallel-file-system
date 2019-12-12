@@ -54,7 +54,7 @@ message  FileAccessResponse {
   uint64 lastUpdateTime = 7;
   uint32 fileSize = 8;
   uint64 fdis = 9;      /* file discripter*/
-  uint32 fileID = 10;
+  uint32 stripwidth = 10;
   repeated string serverList = 11;
 }
 

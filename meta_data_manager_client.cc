@@ -44,8 +44,15 @@ extract_response_from_payload(FileAccessResponse Response) {
          c_response->token = Response.token();
          c_response->start_byte = Response.startbyte();
          c_response->end_byte = Response.endbyte();
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": server recevied size"<< Response.serverlist_size();
+#endif
          for(int i = 0; i< Response.serverlist_size(); i++) {
                  c_response->server_list.push_back(Response.serverlist()[i]);
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<":    "<< Response.serverlist()[i];
+#endif
+
          }
 	return c_response;
 }
@@ -199,6 +206,8 @@ int mm_create_new_file(const char *filename, int stripe_width) {
 	c_req->file_name = filename;
 	c_req->req_ipaddr_port = client_server_ip_port;
 	c_req->type = CREATE;
+	c_req->strip_width = stripe_width;
+
 	
 	c_response = mdm_service->file_access_request_handler(c_req);
 #ifdef DEBUG_FLAG
@@ -230,10 +239,6 @@ int mm_open_file(const char *filename, const char mode)
                  cout<<"\n"<<__func__ <<": open file function";
 #endif
 	file_info_store *file = NULL;
-	if(file_dir.find(filename) != file_dir.end()) {
-		cout<<"This file is already opended";
-		return -1;
-	}
 
 	file_access_request_t *c_req = new file_access_request_t;
 	file_access_response_t *c_response = NULL;
@@ -254,12 +259,19 @@ int mm_open_file(const char *filename, const char mode)
 #endif
 
 	if(c_response->code != OK) {
-		cout<< "Error occured, possibly similar file exists";
+		cout<< "Error occured, possibly file doesnt xists";
 		delete(c_req);
 		delete(c_response);
 		return -1;
 	} else {
-		file =  new file_info_store(filename, c_response->stripe_width);
+		if(file_dir.find(filename) != file_dir.end()) {
+			cout<<"\n file structre already exist";
+			auto it = file_dir.find(filename);
+			file = it->second;
+		} else {
+			 file =  new file_info_store(filename, c_response->stripe_width);
+		 }
+		 
 		file->file_name = filename;
 		file->global_permission = mode;
 		file->status = OPENED;
@@ -270,17 +282,26 @@ int mm_open_file(const char *filename, const char mode)
 		file->fdis= c_response->fdis;
 #ifdef DEBUG_FLAG
                  cout<<"\n"<<__func__ <<": file name : "<<filename;
-                 cout<<"\n"<<__func__ <<": server list : ";
+                 cout<<"\n"<<__func__ <<": server list : "<< c_response->server_list.size();
 #endif
 		for(int i = 0; i < c_response->server_list.size(); i++) {
 			file->server_list.push_back(c_response->server_list[i]);
-			if(fs_service->fs_connections.find(c_response->server_list[i]) == fs_service->fs_connections.end()){
-			/*Create a new connection with the file server*/
+			string temp = c_response->server_list[i];
+			cout<<" "<< temp;
+
+
+			cout<<"\n";
+			cout<<"\n";
+			cout<<"\n";
+			cout<<"\n";
+
+			/*if(fs_service->fs_connections.find(temp) == fs_service->fs_connections.end()){
+			 //Create a new connection with the file server
 				fs_service->create_connection_with_server(c_response->server_list[i]);
 #ifdef DEBUG_FLAG
                  cout<<"\n                    "<< c_response->server_list[i];
 #endif
-			}
+			}*/
 		}
 
 		file_dir[filename] = file;
@@ -441,8 +462,10 @@ int mm_delete_file (const char *filename) {
 int mm_get_fstat(string filename, struct pfs_stat *buf)
 {
 	if(file_dir.find(filename) != file_dir.end()) {
-		cout<<"This file is already opended";
-		return -1;
+		 /*if((*(file_dir.find(filename))).status < OPEN) {
+                 cout<<"\nThis file is not open";
+                 return -1;
+                 }*/
 	}
 
 	file_access_request_t *c_req = new file_access_request_t;
