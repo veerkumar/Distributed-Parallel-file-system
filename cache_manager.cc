@@ -164,7 +164,7 @@ int sort_by_start_file_chunk_vector(const pair<pair<int,int>,char*> &a, const pa
 
 }
 
-int cache_manager::read_file (string file_name, void *buf, int start,int end, int *cache_hit) {
+int cache_manager::read_file (string file_name, char *buf, int start,int end, int *cache_hit) {
 	/*START and END  includes boundries*/
 	bool all_chunks_available = false;
 	int current_index = 0;
