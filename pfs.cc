@@ -62,9 +62,16 @@ set_ipaddr_port() {
 	 BLOCK_SIZE here is not correct, need to use PFS_BLOCK_SIZE to find correct server address, now assumming both are equal
 */
 void harvest_block(cache_block *cb) {
+
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Harvester BLOCK is running";
+#endif
 	pair<int, int> range;
 	int temp_start = 0, temp_end = 0, server_index = 0 ;
 	if(cb->dirty == true) {
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Block is Dirty";
+#endif
 		//No need to syncronize this as we are reading and file recepe wont change
 		vector<string> file_recep = file_dir[cb->file_name]->server_list;
 		/*TODO: one case to handle, while doing this if another thread append a element */                 

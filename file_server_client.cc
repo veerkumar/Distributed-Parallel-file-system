@@ -17,7 +17,6 @@ void
 print_response(fs_read_write_response_t *c_response) {
 	cout<<"\n"<<c_response->request_id;
 	cout<<"\n"<<c_response->code;
-	cout<<"\n"<<c_response->data;
 	cout<<"\n";
 }
 void 
@@ -179,4 +178,34 @@ int file_server_client:: fs_read_file_to_server(string file_name, char *buf, int
         delete(c_req);
         delete(c_response);
         return start-end+1;
+}
+
+int file_server_client:: fs_delete_file_from_server(string file_name,string file_server) {
+	fs_read_write_request_t *c_req = new fs_read_write_request_t;
+        fs_read_write_response_t *c_response = NULL;
+        //char *data = new char
+
+        c_req->request_id = get_random_number();
+        c_req->file_name = file_name;
+        c_req->req_ipaddr_port = client_server_ip_port;
+        c_req->type = DELETE;
+
+        c_response = (fs_connections[file_server])->read_write_request_handler(c_req);
+
+#ifdef DEBUG_FLAG
+        cout<<"Response recieved";
+        print_response(c_response);
+#endif
+        if(c_response->code != OK) {
+                cout<< "Error occured, file is not deleted";
+                delete(c_req);
+                delete(c_response);
+                return -1;
+        } else {
+
+	     cout<< "File is deleted from file server successfully";
+        }
+        delete(c_req);
+        delete(c_response);
+        return 1;
 }
