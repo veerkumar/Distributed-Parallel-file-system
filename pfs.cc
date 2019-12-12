@@ -164,7 +164,6 @@ void flusher() {
 #ifdef DEBUG_FLAG_VERBOSE
 				cout<<"fluser: Non-dirty filename:"<<cb->file_name;
 #endif
-				cb->clean_cache_block(cb);
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l(it);
 			} else {
@@ -173,7 +172,6 @@ void flusher() {
 #endif
 				harvest_block(cb);
 				/* Remove from the dirty list */
-				cb->clean_cache_block(cb);
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l (it);
 			}
