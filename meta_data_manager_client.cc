@@ -115,7 +115,7 @@ make_req_payload (FileAccessRequest *payload,
 	payload->set_requestid(req->request_id);
 	payload->set_filename(req->file_name);
 	payload->set_reqipaddrport(req->req_ipaddr_port);
-	payload->set_stripwidth(req->strip_width);
+	payload->set_stripewidth(req->strip_width);
 }
 
 void

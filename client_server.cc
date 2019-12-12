@@ -1,5 +1,6 @@
 #include "commons.h"
 #include "cs_mdm.h"
+#include "c_mdm.h"
 
 string client_server_ip_port ;
 string ipAddress;
@@ -10,26 +11,104 @@ class client_server_service_impl : public ClientServerService::Service {
         Status fileRevokePermissionRequestHandler (ServerContext* context,const  FilePermissionRevokeRequest* request, FilePermissionRevokeResponse* reply) override {
 
             std::cout << "\nGot permission invoke message ";
-	    /*I dont think we need to implement READ permission invoke*/
+	    cout<<"\n Start byte: "<<request->startbyte();
+	    cout<<"\n End byte: "<<request->endbyte();
+	    cout<<"\n Request id: "<<request->requestid();
+	    cout<<"\n File name: "<<request->filename();
+	    permission per1,per2;
+	    int partial=0;
+	    reply->set_requestid(request->requestid());
+	    file_info_store *file = file_dir[request->filename()];
+            
+
+	    
 	    if (request->type() == FilePermissionRevokeRequest::WRITE) {
+		if(file->status!=CLOSED){
+		    for(auto it = file->access_permission.begin(); it!=file->access_permission.end();it++) {
+			if((*it).type.find("w")!=string::npos){
+			    partial=1;
+			    pair<int,int> s_e = (*it).start_end;
+		            if(s_e.first==request->startbyte() && s_e.second==request->endbyte()){
+				file->access_permission.erase(it);
+			    }else if(s_e.first<request->startbyte() && s_e.second==request->endbyte()){
+				file->access_permission.erase(it);
+				per1.start_end=make_pair (s_e.first,request->startbyte()-1);
+	    			per1.type="rw";
+				file->access_permission.push_back(per1);	
+			    }else if(s_e.first==request->startbyte() && s_e.second>request->endbyte()){
+				file->access_permission.erase(it);
+				per2.start_end=make_pair (request->endbyte()+1,s_e.second);
+	    			per2.type="rw";
+				file->access_permission.push_back(per2);
+			    }else{
+				file->access_permission.erase(it);
+				per1.start_end=make_pair (s_e.first,request->startbyte()-1);
+	    			per1.type="rw";
+				file->access_permission.push_back(per1);
+				per2.start_end=make_pair (request->endbyte()+1,s_e.second);
+	    			per2.type="rw";
+				file->access_permission.push_back(per2);
+			    }
+			    break;
+		        }
+                    }
+		    if(partial)
+		    	reply->set_code(FilePermissionRevokeResponse::PARTIAL);
+		    else
+		    	reply->set_code(FilePermissionRevokeResponse::WHOLE);
+		}else{
+		    reply->set_code(FilePermissionRevokeResponse::WHOLE);
+		}
+		   
+	    }else if (request->type() == FilePermissionRevokeRequest::READ) {
+		if(file->status!=CLOSED){
+		    for(auto it = file->access_permission.begin(); it!=file->access_permission.end();it++) {
+			if((*it).type.find("w")!=string::npos){
+			    pair<int,int> s_e = (*it).start_end;
+			    partial=1;
+		            if(s_e.first==request->startbyte() && s_e.second==request->endbyte()){
+				file->access_permission.erase(it);
+			    }else if(s_e.first<request->startbyte() && s_e.second==request->endbyte()){
+				file->access_permission.erase(it);
+				per1.start_end=make_pair (s_e.first,request->startbyte()-1);
+	    			per1.type="r";
+				file->access_permission.push_back(per1);	
+			    }else if(s_e.first==request->startbyte() && s_e.second>request->endbyte()){
+				file->access_permission.erase(it);
+				per2.start_end=make_pair (request->endbyte()+1,s_e.second);
+	    			per2.type="r";
+				file->access_permission.push_back(per2);
+			    }else{
+				file->access_permission.erase(it);
+				per1.start_end=make_pair (s_e.first,request->startbyte()-1);
+	    			per1.type="r";
+				file->access_permission.push_back(per1);
+				per2.start_end=make_pair (request->endbyte()+1,s_e.second);
+	    			per2.type="r";
+				file->access_permission.push_back(per2);
+			    }
+			    break;
+		        }
+                    }
+		    if(partial)
+		    	reply->set_code(FilePermissionRevokeResponse::PARTIAL);
+		    else
+		    	reply->set_code(FilePermissionRevokeResponse::WHOLE);
+		}else{
+		    reply->set_code(FilePermissionRevokeResponse::WHOLE);
 
-		    cout<<"\n Start byte: "<<request->startbyte();
-		    cout<<"\n End byte: "<<request->endbyte();
-		    cout<<"\n Request id: "<<request->requestid();
-		    cout<<"\n File name: "<<request->filename();
-
-		    /*TODO based on this request, take a lock and modify the conflicting permission
-		     * if current permission is write from  5-15 position and revoke permission ask for 4-20 then we can(double check more cases) reject the request. */
-		    reply->set_requestid(request->requestid());
-	    }
-
-
+		}   
+	    }else{
+		do{
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}while(file->status==READING || file->status==WRITING);
+		file_dir.erase(request->filename());
+            }
             return Status::OK;
     }
 
 
 };
-
 void start_client_server(){
 	/* Start fileserver */
 	client_server_service_impl cs_server;

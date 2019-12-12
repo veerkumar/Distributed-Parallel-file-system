@@ -5,14 +5,6 @@
 
 meta_data_manager *m_m;
 
-/*bool meta_data_manager::add_server_to_file_to_server_dist_map(string file_name, string server){
-
-	mut_file_to_server_dist_map.lock();
-	file_to_server_dist_map[file_name].push_back(server);
-	mut_file_to_server_dist_map.unlock();
-	return true;
-}*/
-
 bool meta_data_manager::add_server_to_server_list(string server) {
 	mut_server_list.lock();
 	server_list.push_back(server);	
@@ -30,14 +22,11 @@ revoke_access_response_t*
 extract_response_from_payload(FilePermissionRevokeResponse Response) {
 	revoke_access_response_t *c_response = new revoke_access_response_t;
 	c_response->request_id = Response.requestid();
-	c_response->token= Response.token();
-	c_response->end_byte= Response.endbyte();
-	c_response->start_byte= Response.startbyte();
-	if(Response.code() == FilePermissionRevokeResponse::OK) {
-                c_response->code = OK;
+	if(Response.code() == FilePermissionRevokeResponse::WHOLE) {
+                c_response->code = WHOLE;
         }
 	else
-		c_response->code = ERROR;
+		c_response->code = PARTIAL;
 	return c_response;
 }
 
@@ -92,12 +81,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	reply->set_requestid(request->requestid());
 	int i = 0;
 	std::vector<file_list_t>::iterator it; 
-	std::vector<permission>::iterator it2;
+	std::vector<mm_permission>::iterator it2;
 	std::vector<string>::iterator it3;
-	vector<permission>permission_del;
-	vector<permission>permission_ins;
+	vector<mm_permission>permission_del;
+	vector<mm_permission>permission_ins;
 	vector<int>index;
 	if (request->type() == FileAccessRequest::CREATE) {
+	    fileListLock.lock();
+	    
 	    reply->set_code(FileAccessResponse::OK);
 	    for(it=fileList.begin();it != fileList.end(); it++){
     
@@ -113,18 +104,26 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    n1.stripe_width=request->stripewidth();
 	    n1.creation_time=static_cast<long int> (time(NULL));
 	    n1.modification_time=static_cast<long int> (time(NULL));
+	    pthread_mutex_init(&(n1.fileLock), nullptr);
+
+
 	    for(i=0,it3=m_m->server_list.begin();i<request->stripewidth(),it3!=m_m->server_list.end();i++,it3++){
 		n1.server_name.push_back(*it3);
 	    }
 	    fileList.push_back(n1);
+	    fileListLock.unlock();
         }
         else if (request->type() == FileAccessRequest::DELETE) {
 	    revoke_access_request_t *c_req = new revoke_access_request_t;
 	    revoke_access_response_t *c_response = NULL;
 	    i=0;
+	    fileListLock.lock();
 	    for(it=fileList.begin();it != fileList.end(); it++){
     		
                 if(it->name.compare(request->filename())==0){
+		    pthread_mutex_lock(&(it->fileLock));;
+		    
+
                     for(it2=it->access_permissions.begin();it2 != it->access_permissions.end(); it2++){
 			c_req->type=DELETE_REVOKE;
 			c_req->start_byte=it2->start_byte;
@@ -133,9 +132,12 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		        c_req->file_name=request->filename();
 			c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 		    }
+		    pthread_mutex_unlock(&(it->fileLock));;
 		    fileList.erase(fileList.begin()+i);  
+		    fileListLock.unlock();
 		    break;
 		}
+		
 		i++;
 	    }
         }
@@ -145,6 +147,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
             for(it=fileList.begin();it != fileList.end(); it++){
     
                 if(it->name.compare(request->filename())==0){
+		    pthread_mutex_lock(&(it->fileLock));;
                     i=0;
 		    if(it->access_permissions.size()==0){
 			permission_ins.push_back({0,it->size,'w',request->reqipaddrport()});
@@ -183,7 +186,8 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 				c_req->file_name=request->filename();
 				c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 				permission_del.push_back(*it2);
-		                permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
+				if(c_response->code==PARTIAL)
+		                	permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
 
 		            }else if(it2->start_byte>=request->startbyte() && it2->end_byte>request->endbyte()){
 		                			
@@ -198,7 +202,8 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 				c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 				
 		                permission_del.push_back(*it2);
-		                permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+				if(c_response->code==PARTIAL)
+		                	permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
 
 		            }else if(it2->start_byte<request->startbyte() && it2->end_byte>request->endbyte()){
 		                if(it2->access_type=='r')
@@ -212,8 +217,10 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 				c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 			        
 		                permission_del.push_back(*it2);
-		                permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
-		                permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+				if(c_response->code==PARTIAL){	
+				        permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
+				        permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+				}
 		            }
 		       }
 		       permission_ins.push_back({request->startbyte(),request->endbyte(),'w',request->reqipaddrport()});
@@ -232,6 +239,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 			it->access_permissions.push_back(*it2);
 			std::cout << it2->start_byte << ' ' << it2->end_byte <<' ';
 		    }
+		    pthread_mutex_unlock(&(it->fileLock));;
 		}
             }
         }
@@ -241,6 +249,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
             for(it=fileList.begin();it != fileList.end(); it++){
     
                 if(it->name.compare(request->filename())==0){
+		    pthread_mutex_lock(&(it->fileLock));;
                     i=0;
 		    if(it->access_permissions.size()==0){
 			permission_ins.push_back({0,it->size,'r',request->reqipaddrport()});
@@ -274,7 +283,8 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 					c_req->file_name=request->filename();
 					c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 					permission_del.push_back(*it2);
-		                        permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
+					if(c_response->code==PARTIAL)
+		                        	permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
 		                    }
 		                }else if(it2->start_byte>=request->startbyte() && it2->end_byte>request->endbyte()){
 		                    if(it2->access_type=='w'){
@@ -285,7 +295,8 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 					c_req->file_name=request->filename();
 					c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 					permission_del.push_back(*it2);
-		                        permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+					if(c_response->code==PARTIAL)
+		                        	permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
 		                    }
 		                } else if(it2->start_byte<request->startbyte() && it2->end_byte>request->endbyte()){
 		                    if(it2->access_type=='w'){
@@ -297,8 +308,10 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 					c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
 					
 		                        permission_del.push_back(*it2);
-		                        permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
-		                        permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+					if(c_response->code==PARTIAL){
+				                permission_ins.push_back({it2->start_byte,request->startbyte()-1,it2->access_type,it2->client_ipaddr_port});
+				                permission_ins.push_back({request->endbyte()+1,it2->end_byte,it2->access_type,it2->client_ipaddr_port});
+					}
 		                    }
 		                }
 		            }
@@ -318,6 +331,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 			    it->access_permissions.push_back(*it2);
 			    std::cout << it2->start_byte << ' ' << it2->end_byte <<' ';
 		        }
+			pthread_mutex_unlock(&(it->fileLock));;
 		     }
 		
 		}
@@ -326,12 +340,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    reply->set_code(FileAccessResponse::ERROR);
 	    for(it=fileList.begin();it != fileList.end(); it++){
 		if(it->name.compare(request->filename())==0){
+		    pthread_mutex_lock(&(it->fileLock));;
 		    reply->set_code(FileAccessResponse::OK);
 		    reply->set_createtime(it->creation_time);
 		    reply->set_lastupdatetime(it->modification_time);
 		    reply->set_filesize(it->size);
 		    for(auto it2=it->server_name.begin();it2 != it->server_name.end(); it2++)
 			reply->add_serverlist(*it2);
+		    pthread_mutex_unlock(&(it->fileLock));;
 		    
 		}
 	    } 
@@ -340,12 +356,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    reply->set_code(FileAccessResponse::ERROR);
 	    for(it=fileList.begin();it != fileList.end(); it++){
 		if(it->name.compare(request->filename())==0){
+		    pthread_mutex_lock(&(it->fileLock));;
 		    reply->set_code(FileAccessResponse::OK);
 		    reply->set_createtime(it->creation_time);
 		    reply->set_lastupdatetime(it->modification_time);
 		    reply->set_filesize(it->size);
 		    for(auto it2=it->server_name.begin();it2 != it->server_name.end(); it2++)
 			reply->add_serverlist(*it2);
+		    pthread_mutex_unlock(&(it->fileLock));;
 		    
 		} 
 	    }   
@@ -366,9 +384,10 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	cout<<"\n"<<request->ipport();
 
 	if(request->type() == RegisterServiceRequest::CLIENT) {
-	   //need lock
+	   mut_client_list.lock();
 	   create_connection_with_client(request->ipport());
 	   reply->set_code(RegisterServiceResponse::OK);
+	   mut_client_list.unlock();
 	}
 	else if(request->type() == RegisterServiceRequest::FILESERVER) {
 	    m_m->add_server_to_server_list(request->ipport());
@@ -384,10 +403,12 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	std::vector<file_list_t>::iterator it; 
 	for(it=fileList.begin();it != fileList.end(); it++){
 	    if(it->name.compare(request->filename())==0){
+		pthread_mutex_lock(&(it->fileLock));;
 		if(it->modification_time<request->time())
 			it->modification_time=request->time();
 		if(it->size<request->newbytewrote())
 			it->size=request->newbytewrote();
+		pthread_mutex_unlock(&(it->fileLock));;
 	    }
 	}
 	reply->set_code(UpdateLastModifiedServiceResponse::OK);

@@ -31,12 +31,9 @@ message FilePermissionRevokeRequest {
 message  FilePermissionRevokeResponse {
   uint64 RequestId = 1;
   enum ReturnCode {
-              OK = 0;
-              REJECTED = 1;
+              WHOLE = 0;
+              PARTIAL = 1;
   }
 
   ReturnCode code = 2;
-  string Token = 3;
-  uint32 StartByte = 4;
-  uint32 EndByte = 5;
 }

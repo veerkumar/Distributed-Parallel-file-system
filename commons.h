@@ -147,6 +147,10 @@ enum revoke_type {
 	DELETE_REVOKE = 2
 };
 
+enum revoke_code {
+            WHOLE = 0,
+            PARTIAL = 1
+};
 
 typedef struct revoke_access_request_ {
   revoke_type type;
@@ -159,10 +163,7 @@ typedef struct revoke_access_request_ {
 
 typedef struct  revoke_access_response_ {
   int request_id ;
-  return_code code;
-  string token;
-  uint32_t start_byte;
-  uint32_t end_byte;
+  revoke_code code;
 } revoke_access_response_t;
 
 

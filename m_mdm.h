@@ -27,21 +27,25 @@ using ClientServer::FilePermissionRevokeResponse;
 using ClientServer::ClientServerService;
 
 
-struct permission{
+struct mm_permission{
 	int start_byte;
 	int end_byte;
 	char access_type;
 	string client_ipaddr_port;
 };
-typedef struct file_list_{
 
+
+mutex fileListLock;
+mutex mut_client_list;
+typedef struct file_list_{
+	pthread_mutex_t fileLock;
 	string name;
 	int fileID;
 	int size;
 	long int creation_time;
 	long int modification_time;
 	int stripe_width;
-	vector<permission> access_permissions;
+	vector<mm_permission> access_permissions;
 	vector <string> server_name;
 }file_list_t;
 
