@@ -196,6 +196,7 @@ class file_server_service_impl : public FileServerService::Service {
         cout<<"\n"<<__func__<<" Request End Byte = "<< request->endbyte();
         cout<<"\n"<<__func__<<" Request Request ID ="<< request->requestid();
         cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
+	cout<<"\n"<<__func__<<" Request File Name ="<< request->stripwidth();
 #endif
 		    uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
 		    name= request->filename() +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
@@ -208,6 +209,7 @@ class file_server_service_impl : public FileServerService::Service {
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" Writing File =" << name;
 	cout<<"\n"<<__func__<<" Offset ="<< startByte;
+	cout<<"\n"<<__func__<<" Data ="<< request->data();
 #endif
 		    fseek(fid,startByte,SEEK_SET);
 		    fwrite ((void *)&(request->data()),1,request->endbyte()-request->startbyte()+1,fid);

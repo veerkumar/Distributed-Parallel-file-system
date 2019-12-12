@@ -22,6 +22,8 @@ class file_server_client {
                 fs_read_write_response_t* read_write_request_handler(fs_read_write_request_t *c_req);
 		int fs_write_file_to_server(cache_block *cb, int start, int end, string file_server);
 		int fs_read_file_to_server(string file_name, char *buf, int start, int end, string file_server);
+		int fs_delete_file_from_server(string file_name,string file_server);
+		
 };
 
 extern map<string, file_server_client*> fs_connections;

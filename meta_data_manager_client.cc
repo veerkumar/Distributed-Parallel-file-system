@@ -447,8 +447,10 @@ int mm_delete_file (const char *filename) {
         }
         delete(c_req);
         delete(c_response);
+	for(auto it= file_dir[filename]->server_list.begin();it!=file_dir[filename]->server_list.end();it++)
+		fs_service->fs_delete_file_from_server(filename,*it);
+	
 
-	//TODO SEND file delete request to file server
 
         return 1;
 }
