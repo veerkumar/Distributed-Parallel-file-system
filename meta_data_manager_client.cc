@@ -52,6 +52,9 @@ extract_response_from_payload(FileAccessResponse Response) {
 
 register_service_response_t*
 extract_response_from_payload(RegisterServiceResponse Response) {
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": extring the register service response ";
+#endif
 	register_service_response_t *c_response = new register_service_response_t;
 	if(Response.code() == RegisterServiceResponse::OK) {
 		c_response->code = OK;
@@ -155,6 +158,10 @@ file_access_response_t* meta_data_manager_client::file_access_request_handler( f
 }
 
 register_service_response_t* meta_data_manager_client::register_service_handler( register_service_request_t *c_req) {
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<":";
+#endif
         RegisterServiceRequest ReqPayload;
         RegisterServiceResponse Response;
         ClientContext Context;
@@ -162,7 +169,7 @@ register_service_response_t* meta_data_manager_client::register_service_handler(
         register_service_response_t *c_response = NULL;
         make_req_payload(&ReqPayload, c_req);
 
-        print_request(c_req);
+//        print_request(c_req);
 
         // The actual RPC.
         Status status = stub_->registerServiceHandler(&Context, ReqPayload, &Response);
@@ -179,6 +186,10 @@ register_service_response_t* meta_data_manager_client::register_service_handler(
 }
 
 int mm_create_new_file(const char *filename, int stripe_width) {
+#ifdef DEBUG_FLAG
+                 cout<<__func__ <<": create file function called ";
+#endif
+
 	file_access_request_t *c_req = new file_access_request_t;
 	file_access_response_t *c_response = NULL;
 
@@ -191,7 +202,7 @@ int mm_create_new_file(const char *filename, int stripe_width) {
 	
 	c_response = mdm_service->file_access_request_handler(c_req);
 #ifdef DEBUG_FLAG
-	cout<<"Response recieved";
+	cout<<"\n Response recieved";
 	print_response(c_response);
 #endif
 	if(c_response->code != OK) {
@@ -200,7 +211,9 @@ int mm_create_new_file(const char *filename, int stripe_width) {
 		delete(c_response);
 		return -1;
 	} else {
-	
+#ifdef DEBUG_FLAG
+		cout<<"mM_create_new_file: file created successfully";
+#endif	
 		/*Create the file record in file*/
 		file_info_store *new_file = new file_info_store(filename, stripe_width);
 		file_dir[filename] = new_file;
@@ -213,6 +226,9 @@ int mm_create_new_file(const char *filename, int stripe_width) {
 
 int mm_open_file(const char *filename, const char mode)
 {
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": open file function";
+#endif
 	file_info_store *file = NULL;
 	if(file_dir.find(filename) != file_dir.end()) {
 		cout<<"This file is already opended";
@@ -228,10 +244,12 @@ int mm_open_file(const char *filename, const char mode)
 	c_req->file_name = filename;
 	c_req->req_ipaddr_port = client_server_ip_port;
 	c_req->type = OPEN;
-
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": sent the request";
+#endif
 	c_response = mdm_service->file_access_request_handler(c_req);
 #ifdef DEBUG_FLAG
-	cout<<"Response recieved";
+	cout<<"\n Response recieved";
 	print_response(c_response);
 #endif
 
@@ -261,6 +279,13 @@ int mm_open_file(const char *filename, const char mode)
 		file_dir[filename] = file;
 		fdis_to_filename_map[c_response->fdis] = filename;
 	}
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<":";
+                 cout<<"\n"<<__func__ <<": fdis" <<file->fdis;
+                 cout<<"\n"<<__func__ <<": creation time" << file->create_time;
+                 cout<<"\n"<<__func__ <<": access time" << file->last_modified_time;
+                 cout<<"\n"<<__func__ <<": file status" << file->status;
+#endif
 	delete(c_req);
 	delete(c_response);
 	return file->fdis;
@@ -285,10 +310,13 @@ int mm_get_read_permission (int fdis, size_t nbyte, off_t offset) {
 	c_req->req_ipaddr_port = client_server_ip_port;
 	c_req->type = READ;
 
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Permission request sent to MDM";
+#endif
 	c_response = mdm_service->file_access_request_handler(c_req);
 
 #ifdef DEBUG_FLAG
-	cout<<"Response recieved";
+	cout<<"\n Response recieved";
 	print_response(c_response);
 #endif
 
@@ -306,7 +334,13 @@ int mm_get_read_permission (int fdis, size_t nbyte, off_t offset) {
 		file_dir[fdis_to_filename_map[fdis]]->access_permission.push_back(access_permission);
 		file_status status = file_dir[fdis_to_filename_map[fdis]]->status;
 		file_dir[fdis_to_filename_map[fdis]]->status == READING;
-			
+#ifdef DEBUG_FLAG
+		 for(auto it = file_dir[fdis_to_filename_map[fdis]]->access_permission.begin();it!=file_dir[fdis_to_filename_map[fdis]]->access_permission.end();it++) {
+			 cout<<"\n"<<__func__ <<": permission" <<(*it).type;
+		 	cout<< "\nstart" <<(*it).start_end.first <<"end"<<(*it).start_end.second;
+		 }
+                 cout<<"\n"<<__func__ <<": file status" << file_dir[fdis_to_filename_map[fdis]]->status;
+#endif
 		return 1; }
 	return 1;
 }
@@ -350,7 +384,13 @@ int mm_get_write_permission (int fdis, size_t nbyte, off_t offset) {
 		access_permission.start_end = make_pair(c_response->start_byte, c_response->end_byte);
 		file_dir[fdis_to_filename_map[fdis]]->access_permission.push_back(access_permission);
 		file_dir[fdis_to_filename_map[fdis]]->status == WRITING;
-
+#ifdef DEBUG_FLAG
+                  for(auto it = file_dir[fdis_to_filename_map[fdis]]->access_permission.begin();it!=file_dir[fdis_to_filename_map[fdis]]->access_permission.end();it++) {
+                          cout<<"\n"<<__func__ <<": permission" <<(*it).type;
+                         cout<< "\nstart" <<(*it).start_end.first <<"end"<<(*it).start_end.second;
+                  }
+                  cout<<"\n"<<__func__ <<": file status" << file_dir[fdis_to_filename_map[fdis]]->status;
+ #endif
 		return 1;
 	}
 	return 1;
@@ -388,8 +428,6 @@ int mm_delete_file (const char *filename) {
 
 	//TODO SEND file delete request to file server
 
-
-
         return 1;
 }
 
@@ -425,8 +463,13 @@ int mm_get_fstat(string filename, struct pfs_stat *buf)
 		file_info_store *file = NULL;
 
 		buf->pst_mtime = c_response->last_modified_time;
-		buf->pst_mtime = c_response->create_time;
+		buf->pst_ctime = c_response->create_time;
 		buf->pst_size = c_response->file_size;
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": buf->pst_c  "<<buf->pst_ctime;
+                 cout<<"\n"<<__func__ <<": last modified time "<<buf->pst_mtime;
+                 cout<<"\n"<<__func__ <<":"<< buf->pst_size;
+#endif
 	}
 	delete(c_req);
 	delete(c_response);

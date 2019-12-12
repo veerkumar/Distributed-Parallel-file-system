@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
 */
-  pfs_close(fdes);
+  //pfs_close(fdes);
 
   free(buf); 
   return 0;

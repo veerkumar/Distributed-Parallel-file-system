@@ -23,6 +23,8 @@
 #include <grpcpp/create_channel.h>
 //#include <grpcpp/security/credentials.h>
 
+#define DEBUG_FLAG 1
+
 using namespace std;
 enum request_type {
 	READ = 0,

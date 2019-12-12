@@ -90,7 +90,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	vector<int>index;
 	if (request->type() == FileAccessRequest::CREATE) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"MM Server gets create request";
+	cout<<"\n"<<__func__<<"MM Server gets create request";
 
 #endif
 	    fileListLock.lock();
@@ -100,7 +100,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
     
                 if(it->name.compare(request->filename())==0){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"ERROR File Exists";
+	cout<<"\n"<<"ERROR File Exists "<<request->filename();
 
 #endif
                     reply->set_code(FileAccessResponse::ERROR);
@@ -122,7 +122,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    }
 	    fileList.push_back(n1);
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"File Added";
+	cout<<"\n"<<"File Added "<<request->filename();
 #endif
 	    fileListLock.unlock();
         }
@@ -485,7 +485,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    reply->set_code(RegisterServiceResponse::OK);
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<"Server registered";
-	for(auto it=server_list.begin(); it!=server_list.end();it++)
+	for(auto it= m_m->server_list.begin(); it!= m_m->server_list.end();it++)
 		cout <<"\nServer" << *it ;
 #endif
 	}

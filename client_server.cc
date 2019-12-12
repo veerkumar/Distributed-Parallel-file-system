@@ -2,9 +2,11 @@
 #include "cs_mdm.h"
 #include "c_mdm.h"
 
-string client_server_ip_port ;
 string ipAddress;
 int port;
+string client_server_ip_port ;
+
+
 
 class client_server_service_impl : public ClientServerService::Service {
 
@@ -112,8 +114,11 @@ class client_server_service_impl : public ClientServerService::Service {
 void start_client_server(){
 	/* Start fileserver */
 	client_server_service_impl cs_server;
-
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": " <<client_server_ip_port;
+#endif
 	ServerBuilder builder;
+
 	builder.AddListeningPort(client_server_ip_port, grpc::InsecureServerCredentials());
 	builder.RegisterService(&cs_server);
 	std::unique_ptr<Server> server(builder.BuildAndStart());

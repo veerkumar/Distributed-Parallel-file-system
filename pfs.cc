@@ -12,6 +12,7 @@ map<int, string> fdis_to_filename_map;
 map<string,pair<int,int>> token_map;
 
 
+
 thread thread_flusher;
 thread thread_harvester;
 thread thread_client_server;
@@ -51,6 +52,10 @@ set_ipaddr_port() {
         client_server_ip_port.append(ipAddress);
         client_server_ip_port.append(":");
         client_server_ip_port.append(to_string(port));
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": "<<client_server_ip_port;
+#endif
 }
 
 
@@ -120,12 +125,12 @@ void harvester(){
 }
 void harvester_process() {
 #ifdef DEBUG_FLAG
-		cout<<"Harvester process created";
+		cout<<"\n Harvester process created";
 #endif
 	while(1) {
 		std::this_thread::sleep_for(std::chrono::seconds(30));
 #ifdef DEBUG_FLAG
-		cout<<"Harvester_process: flusher process Timeout";
+		cout<<"\n Harvester_process: flusher process Timeout";
 #endif
 		harvester();
 	}
@@ -142,7 +147,7 @@ void harvester_process() {
 */
 void flusher() {
 #ifdef DEBUG_FLAG
-	cout<<"fluser: starting executing";
+	cout<<"\nfluser: starting executing";
 #endif
 	int filled_per = 0; 
 	int reduce_to_sz = 0;	
@@ -152,7 +157,7 @@ void flusher() {
 	cache_block *cb = NULL;
 	if(filled_per >= FLUSH_HIGH_MARK ) { 
 #ifdef DEBUG_FLAG
-		cout<<"flusher: Reached high water mark";
+		cout<<"\nflusher: Reached high water mark";
 #endif
 		reduce_to_sz = (FLUSH_LOW_MARK/100)*(ROW*COLUMN);	
 		
@@ -162,13 +167,13 @@ void flusher() {
 			cb = *it;
 			if(cb->dirty == false) {
 #ifdef DEBUG_FLAG_VERBOSE
-				cout<<"fluser: Non-dirty filename:"<<cb->file_name;
+				cout<<"\n fluser: Non-dirty filename:"<<cb->file_name;
 #endif
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l(it);
 			} else {
 #ifdef DEBUG_FLAG_VERBOSE
-				cout<<"fluser: Dirty block filename:"<<cb->file_name;
+				cout<<"\n fluser: Dirty block filename:"<<cb->file_name;
 #endif
 				harvest_block(cb);
 				/* Remove from the dirty list */
@@ -181,12 +186,12 @@ void flusher() {
 
 void flusher_process(){
 #ifdef DEBUG_FLAG
-		cout<<"Fluser process created";
+		cout<<"\nFluser process created";
 #endif
 	while(1) {
 		std::this_thread::sleep_for(std::chrono::seconds(FLUSHER_TIMEOUT));
 #ifdef DEBUG_FLAG
-		cout<<"flusher_process: flusher process Timeout";
+		cout<<"\nflusher_process: flusher process Timeout";
 #endif
 		flusher();
 	}
@@ -194,21 +199,20 @@ void flusher_process(){
 
 void 
 register_client_and_start_client_server_process(){
-	register_service_request_t *c_req = new register_service_request_t;
-        register_service_response_t *c_response = NULL;
 
-        c_req->type  = CLIENT;
-        c_req->ip_port = client_server_ip_port;
-
-        c_response = mdm_service->register_service_handler(c_req);
-        cout<<"Response recieved";
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": starting the client server";
+#endif
 	start_client_server(); // it will never return
 	return;
 }
 
 void
 initialize (int argc, char *argv[]) {
-
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": initilaization ";
+#endif
+	set_ipaddr_port();
 	/* Intialize cache */
 	c_m = new cache_manager();
 
@@ -222,8 +226,24 @@ initialize (int argc, char *argv[]) {
 	mdm_service = new meta_data_manager_client (grpc::CreateChannel(server_ip_port, grpc::InsecureChannelCredentials()));
 	
 	/* generate port and fetch ip */
-	set_ipaddr_port();
 	thread_client_server = std::thread(register_client_and_start_client_server_process);	
+	
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": register the clinet and start the server";
+#endif
+	register_service_request_t *c_req = new register_service_request_t;
+        register_service_response_t *c_response = NULL;
+
+        c_req->type  = CLIENT;
+        c_req->ip_port = client_server_ip_port;
+
+        c_response = mdm_service->register_service_handler(c_req);
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": after client register";
+#endif
 
 	return;
 }
