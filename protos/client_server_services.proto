@@ -23,7 +23,7 @@ message FilePermissionRevokeRequest {
   uint32 EndByte = 3;
   uint64 RequestId = 4;  
   string FileName = 5;
-  string token = 6;
+  //string token = 6;
 }
 
 /* The response message containing request status and token if success 

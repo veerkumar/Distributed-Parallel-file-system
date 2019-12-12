@@ -1,5 +1,6 @@
 #include "commons.h"
 #include "fs_mdm.h"
+#include "config.h"
 
 
 #define INTERFACE "ens33"
@@ -142,6 +143,7 @@ class file_server_service_impl : public FileServerService::Service {
 	    char *buffer;
 	    size_t result;
 	    int found=0;
+	    string name;
 	    if (request->type() == FileReadWriteRequest::READ) {
 	    	cout<<"\n"<<request->reqipaddrport();
              	cout<<"\n"<<request->startbyte();
@@ -149,17 +151,22 @@ class file_server_service_impl : public FileServerService::Service {
              	cout<<"\n"<<request->requestid();
              	cout<<"\n"<<request->filename();
 		for(auto it=fileManager.begin();it!=fileManager.end();it++){
-			if((*it).compare(request->filename())==0){
-				fid=fopen((*it).c_str(),"r");
+			if((*it).first.compare(request->filename())==0){
+				uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
+				name= (*it).first +"."+ std::to_string(fileNumber);
+				fid=fopen(name.c_str(),"r");
 				reply->set_requestid(request->requestid());
 			     	reply->set_reqstatus(FileReadWriteResponse::OK);
 				buffer = (char*) malloc (sizeof(char)*(request->endbyte()-request->startbyte()+1));
+				uint32_t i=request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE);
+				uint32_t offset=(((i-i%7)/(*it).second)*((*it).second-1)*(STRIP_SIZE*1024*PFS_BLOCK_SIZE))+(i%(*it).second)*4096;
+				uint32_t startByte=request->startbyte()-offset;
 			  	if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
-				fseek(fid,request->startbyte(),SEEK_SET);
+				fseek(fid,startByte,SEEK_SET);
 			  	// copy the file into the buffer:
 			  	result = fread (buffer,1,request->endbyte()-request->startbyte()+1,fid);
 			  	if (result != request->endbyte()-request->startbyte()+1) {fputs ("Reading error",stderr); exit (3);}
-						    	
+				fclose(fid);		    	
 				reply->set_data(buffer);
 				return Status::OK;
 			}
@@ -176,22 +183,27 @@ class file_server_service_impl : public FileServerService::Service {
 		    cout<<"\n"<<request->requestid();
 		    cout<<"\n"<<request->filename();
 		    
-		    fid=fopen(request->filename().c_str(),"w");
+		    uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
+		    name= request->filename() +"."+ std::to_string(fileNumber);
+		    fid=fopen(name.c_str(),"w");
 		    reply->set_requestid(request->requestid());
 		    reply->set_reqstatus(FileReadWriteResponse::OK);
-		    fseek(fid,request->startbyte(),SEEK_SET);
+		    uint32_t i=request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE);
+		    uint32_t offset=(((i-i%7)/request->stripwidth())*(request->stripwidth()-1)*(STRIP_SIZE*1024*PFS_BLOCK_SIZE))+(i%request->stripwidth())*4096;
+		    uint32_t startByte=request->startbyte()-offset;
+		    fseek(fid,startByte,SEEK_SET);
 		    fwrite ((void *)&(request->data()),1,request->endbyte()-request->startbyte()+1,fid);
 		    fclose(fid);		    	
 				
 		    
 		    for(auto it=fileManager.begin();it!=fileManager.end();it++){
-			if((*it).compare(request->filename())==0){
+			if((*it).first.compare(request->filename())==0){
 				found=1;
 				continue;
 			}
 		    }
 		    if(found==0)
-			fileManager.push_back(request->filename());
+			fileManager.push_back(make_pair(request->filename(),request->stripwidth()));
 		    		    	
 		    mdm_service->update_last_modified_time(request->filename(),request->endbyte());
 	    }

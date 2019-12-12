@@ -37,6 +37,6 @@ class meta_data_manager_client {
 
 extern meta_data_manager_client *mdm_service;
 
-vector<string> fileManager;
+vector<pair<string,int>> fileManager;
 
 

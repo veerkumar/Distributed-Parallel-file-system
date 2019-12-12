@@ -48,7 +48,7 @@ revoke_access_response_t* revoke_client::send_revoke_request (revoke_access_requ
 		Req.set_endbyte(c_req->end_byte);
 		Req.set_requestid(c_req->request_id);
 		Req.set_filename(c_req->file_name);
-		Req.set_token(c_req->token);
+		//Req.set_token(c_req->token);
 	
 		/*Make you payload(i.e response from c_data structe)*/
 		Status status = stub_->fileRevokePermissionRequestHandler(&Context, Req, &Response);
@@ -77,7 +77,9 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	cout<<"\n"<<request->endbyte();
 	cout<<"\n"<<request->requestid(); 
 	cout<<"\n"<<request->filename();
-	cout<<"\n"<<request->reqipaddrport(); 
+	cout<<"\n"<<request->reqipaddrport();
+	cout<<"\n"<<request->reqipaddrport();
+	
 	reply->set_requestid(request->requestid());
 	int i = 0;
 	std::vector<file_list_t>::iterator it; 

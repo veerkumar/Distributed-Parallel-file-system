@@ -159,7 +159,7 @@ typedef struct revoke_access_request_ {
   uint32_t end_byte;
   int request_id;
   string file_name;
-  string token;
+  //string token;
 } revoke_access_request_t;
 
 typedef struct  revoke_access_response_ {

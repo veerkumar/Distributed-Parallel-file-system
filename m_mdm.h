@@ -28,8 +28,8 @@ using ClientServer::ClientServerService;
 
 
 struct mm_permission{
-	int start_byte;
-	int end_byte;
+	uint32_t start_byte;
+	uint32_t end_byte;
 	char access_type;
 	string client_ipaddr_port;
 };
@@ -41,7 +41,7 @@ typedef struct file_list_{
 	pthread_mutex_t fileLock;
 	string name;
 	int fileID;
-	int size;
+	uint32_t size;
 	long int creation_time;
 	long int modification_time;
 	int stripe_width;
