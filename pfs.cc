@@ -98,13 +98,25 @@ void harvest_block(cache_block *cb) {
 }
 
 void harvester(){
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Harvester process is running";
+#endif
 	pair<int,int> range;
 	int server_index = 0;
 	int temp_start = 0, temp_end = 0;
 	/* TODO: sanity check
 		 Since this loop is latency expensive we avoinding to lock it, 
 		we will remove element later*/
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Dirty list size is = "<< c_m->dirty_list.size();
+#endif
+
 	for(auto it = c_m->dirty_list.begin(); it != c_m->dirty_list.end(); it++) {
+
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Dirty Cache: start= "<<(*it)->start_index <<" end= "<<(*it)->end_index <<" filename= "<<(*it)->file_name <<" dirty= "<<(*it)->dirty;
+	cout<<"\n";
+#endif
 		cache_block *cb = *it;
 		harvest_block(cb);
 	}
@@ -125,9 +137,9 @@ void harvester_process() {
 		cout<<"\n Harvester process created";
 #endif
 	while(1) {
-		std::this_thread::sleep_for(std::chrono::seconds(30));
+		std::this_thread::sleep_for(std::chrono::seconds(5));
 #ifdef DEBUG_FLAG
-		cout<<"\n Harvester_process: flusher process Timeout";
+		cout<<"\n Harvester_process: harvester process Timeout";
 #endif
 		harvester();
 	}
@@ -187,7 +199,7 @@ void flusher_process(){
 	while(1) {
 		std::this_thread::sleep_for(std::chrono::seconds(FLUSHER_TIMEOUT));
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<":  flusher_process: flusher process Timeout ";
+                 cout<<"\n"<<__func__ <<": flusher process Timeout ";
 #endif
 		flusher();
 	}

@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
   //Write the first 200 bytes of data from the input file onto pfs_file
   err_value = pfs_write(fdes, (void *)buf, 200, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
-
+  std::this_thread::sleep_for(std::chrono::seconds(120));
+  
   //pfs_close(fdes);
 
   free(buf); 
