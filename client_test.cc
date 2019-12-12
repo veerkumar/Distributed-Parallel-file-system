@@ -11,6 +11,7 @@ int main(int argc, char *argv[])
   int err_value;
   char input_fname[20];
   char *buf;
+  //char *readbuf;
   int cache_hit;
   ssize_t nread;
   string line;
@@ -30,20 +31,14 @@ int main(int argc, char *argv[])
 
   ifstream file (input_fname);
 
-  buf = new char[5*ONEKB];
+  //buf = new char[4*ONEKB];
   
-  if (file.is_open())
-  {
-	cout<<"\nFIle is open";
-	cout <<"\nClient Test";
-	int i=0;
-    while ( getline (file,line) )
-    {
-      memcpy(buf+i,(line).c_str(),sizeof(line)) ;
-      i = i + sizeof(line);
-    }
-    file.close();
-  }
+  FILE * fid=fopen(input_fname,"r");
+  buf = (char*) malloc (sizeof(char)*4*ONEKB);
+  int result = fread (buf,1,4*ONEKB,fid);
+  cout<<buf;
+  std::this_thread::sleep_for(std::chrono::seconds(10));
+  
 
   // create a file only once, say at client 1 
   err_value = pfs_create("pfs_file1", 3);
@@ -63,8 +58,11 @@ int main(int argc, char *argv[])
 
   //At Client 1
   //Write the first 200 bytes of data from the input file onto pfs_file
-  err_value = pfs_write(fdes, (void *)buf, 200, 0, &cache_hit);
+  err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
+  
+  err_value = pfs_read(fdes, (void *)buf, 2*ONEKB, ONEKB, &cache_hit);
+  printf("Read %d bytes of data from the file\n", err_value);
   std::this_thread::sleep_for(std::chrono::seconds(120));
   
   //pfs_close(fdes);

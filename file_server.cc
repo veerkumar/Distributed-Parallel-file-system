@@ -3,7 +3,7 @@
 #include "config.h"
 
 
-#define INTERFACE "ens33"
+#define INTERFACE "wlp3s0"
 
 
 string ipAddress;
