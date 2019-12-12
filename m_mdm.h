@@ -40,7 +40,7 @@ mutex mut_client_list;
 typedef struct file_list_{
 	pthread_mutex_t fileLock;
 	string name;
-	int fileID;
+	uint32_t fileID;
 	uint32_t size;
 	long int creation_time;
 	long int modification_time;

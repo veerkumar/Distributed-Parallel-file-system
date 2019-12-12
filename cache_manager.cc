@@ -36,6 +36,9 @@ bool cache_block::clean_cache_block(cache_block *cb){
 
 
 cache::cache(){
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Cache constructor is called";
+#endif
 	slots = new cache_block*[ROW];
 	for(int i =0; i<ROW;i++) {
 		slots[i] = new cache_block[COLUMN];
@@ -43,15 +46,25 @@ cache::cache(){
 }
 
 cache_manager::cache_manager() {
-	if (obj_cache == NULL) {
+	//if (obj_cache == NULL) {
 		obj_cache =  new cache;
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Cache Manager constructor is called";
+#endif
 		/* add newly allocated in the free list */
 		for(int i=0; i<ROW;i++) {
 			for(int j=0; j<COLUMN;j++) {
 				free_list.push_back(&obj_cache->slots[i][j]);
 			}
 		}
-	}
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Free list size= "<<free_list.size();
+#endif
+	//}
+
+/*#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Object is not NULL";
+#endif*/
 } 
 
 cache* cache_manager:: get_cache_obj () {
@@ -92,8 +105,16 @@ cache_block* cache_manager::get_free_cache_block () {
 		cache_block *cb;
 		mutx_free_list.lock();
 		auto it = free_list.begin();
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Freelist size = "<< free_list.size();
+	cout<<"\n";
+#endif
 		cb = *it;
 		free_list.erase(it);
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Freelist size = "<< free_list.size();
+#endif
+
 		mutx_free_list.unlock();
 	return cb;
 }
@@ -450,11 +471,25 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
                  }
                  it++;
          }
-	if(start != end) {
+	if(start< end+1) {
 		/*looks like append*/
 	     while( start <= end) {
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Getting Free Block From Cache";
+	cout<<"\n";
+#endif
 	        cb = get_free_cache_block();
-                memcpy(cb->data, temp_buf+current_written_sz, CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1));
+
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Doing Memcpy";
+	cout<<"\n";
+#endif
+
+                memcpy(cb->data, temp_buf+current_written_sz, CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1));
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Memcpy is finished";
+	cout<<"\n";
+#endif
                  current_written_sz = current_written_sz +  CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);
 		 // not putting -1 as it will be use to more 1 more position where next time it will write
                 cb->start_index = start;
@@ -462,9 +497,25 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
                 cb->file_name = file_name;
                 cb->dirty = true;
                 cb->dirty_range.push_back(make_pair(start, CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start)));
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Cache is added start= "<<cb->start_index <<" end= "<<cb->end_index <<" filename= "<<cb->file_name <<" dirty= "<<cb->dirty;
+	cout<<"\n";
+#endif
+
                 add_to_front_allocated_list_l(cb);
 		obj_cache->refer(cb); /*For LRU*/
 		start = CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);
+
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Added to the front list";
+	cout<<"\n";
+#endif
+		start = CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1);
+
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" New Start"<< start;
+	cout<<"\n";
+#endif
 	     }
 	}
 }

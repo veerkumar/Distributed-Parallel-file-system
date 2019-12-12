@@ -162,7 +162,7 @@ class file_server_service_impl : public FileServerService::Service {
 	cout<<"\n"<<__func__<<" StripWidth ="<< (*it).second;
 #endif
 				uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
-				name= (*it).first +"."+ std::to_string(fileNumber);
+				name= (*it).first +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
 				fid=fopen(name.c_str(),"r");
 				reply->set_requestid(request->requestid());
 			     	reply->set_reqstatus(FileReadWriteResponse::OK);
@@ -198,7 +198,7 @@ class file_server_service_impl : public FileServerService::Service {
         cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
 #endif
 		    uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
-		    name= request->filename() +"."+ std::to_string(fileNumber);
+		    name= request->filename() +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
 		    fid=fopen(name.c_str(),"w");
 		    reply->set_requestid(request->requestid());
 		    reply->set_reqstatus(FileReadWriteResponse::OK);
@@ -238,7 +238,7 @@ class file_server_service_impl : public FileServerService::Service {
         cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
 #endif
 		   
-		string del="exec rm -r ./"+request->filename()+"*";
+		string del="exec rm -r ./"+request->filename()+"."+file_server_ip_port+"*";
 		system(del.c_str());
 	    }
 

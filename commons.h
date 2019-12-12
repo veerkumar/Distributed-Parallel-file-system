@@ -64,7 +64,7 @@ typedef struct file_access_request_ {
   string file_name;
   string req_ipaddr_port;
   uint32_t strip_width;
-  uint64_t fdis ;
+  uint32_t fdis ;
 } file_access_request_t;
 
 typedef struct  file_access_response_ {
@@ -73,7 +73,7 @@ typedef struct  file_access_response_ {
   string token;
   uint32_t start_byte;
   uint32_t end_byte;
-  uint64_t fdis ; 
+  uint32_t fdis ; 
   uint32_t create_time;
   uint32_t last_modified_time;
   uint32_t file_size;
@@ -122,7 +122,7 @@ typedef struct file_store_ {
 	uint32_t last_modified_time;
 	uint32_t file_size;
 	int stripe_width;
-	int fdis;
+	uint32_t fdis;
         vector<string> server_list;
 	vector<permission> access_permission;
 

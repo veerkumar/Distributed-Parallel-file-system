@@ -18,7 +18,7 @@ bool meta_data_manager::add_server_to_server_list(string server) {
 int get_random_number () {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine generator(seed);
-	 std::uniform_int_distribution<int> distribution(0, INT_MAX);
+	 std::uniform_int_distribution<int> distribution(0, UINT_MAX);
 	return distribution(generator);
 }
 
@@ -175,9 +175,10 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
         else if (request->type() == FileAccessRequest::WRITE) {
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" MM Server gets write request for "<<request->filename();
-	cout<<"\n"<<__func__<<" Permission CHECK!!!!";
 
 #endif
+	    reply->set_startbyte(request->startbyte());
+	    reply->set_endbyte(request->endbyte());
 	    revoke_access_request_t *c_req = new revoke_access_request_t;
 	    revoke_access_response_t *c_response = NULL;
             for(it=fileList.begin();it != fileList.end(); it++){
@@ -187,7 +188,21 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
                     i=0;
 		    if(it->access_permissions.size()==0){
 
-			permission_ins.push_back({0,it->size,'w',request->reqipaddrport()});
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Gave the whole permission for file "<<request->filename()<< " size= "<< it->size<< " request end byte= "<< request->endbyte();
+
+#endif
+			if(it->size>request->endbyte()){
+				permission_ins.push_back({0,it->size,'w',request->reqipaddrport()});
+				reply->set_startbyte(0);
+	    			reply->set_endbyte(it->size);
+			}
+			else{
+				permission_ins.push_back({0,request->endbyte(),'w',request->reqipaddrport()});
+				reply->set_startbyte(0);
+	    			reply->set_endbyte(request->endbyte());
+				
+			}
 		    }
 		    else{
 		            for(it2=it->access_permissions.begin();it2 != it->access_permissions.end(); it2++){
@@ -290,19 +305,38 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		       }
 		       permission_ins.push_back({request->startbyte(),request->endbyte(),'w',request->reqipaddrport()});
 		    }
-		    cout << "DEL:";
+		    cout <<"\n"<<__func__<< " DELETED Permissions:" << permission_del.size();
 		    i=0;
 		    for(it2=permission_del.begin();it2 != permission_del.end(); it2++){
 			it->access_permissions.erase(it->access_permissions.begin()+index[i]-i);
 			i++;
 			
-			std::cout << it2->start_byte << ' ' << it2->end_byte <<' ';
+			std::cout <<'\n'<< it2->start_byte << ' ' << it2->end_byte ;
 		    }
-		    cout << "\nINS:";
+		    if(permission_ins.size()==1 && it->access_permissions.size()==0){
+				cout <<"\n"<<__func__<< " Inserting Whole Permissions:"<< permission_ins.size();
+				if(it->size>request->endbyte()){
+					it->access_permissions.push_back({0,it->size,'w',request->reqipaddrport()});
+					reply->set_startbyte(0);
+		    			reply->set_endbyte(it->size);
+					std::cout <<'\n'<< 0 << ' ' << it->size <<' ';
+				}
+				else{
+					it->access_permissions.push_back({0,request->endbyte(),'w',request->reqipaddrport()});
+					reply->set_startbyte(0);
+		    			reply->set_endbyte(request->endbyte());
+					std::cout <<'\n'<< 0 << ' ' << request->endbyte() <<' ';
+				
+				}
+				
+			}
+		    else{
+				cout <<"\n"<<__func__<< " INSERTED Permissions:"<< permission_ins.size();
 
-		    for(it2=permission_ins.begin();it2 != permission_ins.end(); it2++){
-			it->access_permissions.push_back(*it2);
-			std::cout << it2->start_byte << ' ' << it2->end_byte <<' ';
+				for(it2=permission_ins.begin();it2 != permission_ins.end(); it2++){
+				    it->access_permissions.push_back(*it2);
+				    std::cout <<'\n'<< it2->start_byte << ' ' << it2->end_byte <<' ';
+				}
 		    }
 		    pthread_mutex_unlock(&(it->fileLock));;
 		}
@@ -314,6 +348,8 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	cout<<"\n"<<__func__<<" MM Server gets read request";
 
 #endif
+	    reply->set_startbyte(request->startbyte());
+	    reply->set_endbyte(request->endbyte());
 	    revoke_access_request_t *c_req = new revoke_access_request_t;
 	    revoke_access_response_t *c_response = NULL;
             for(it=fileList.begin();it != fileList.end(); it++){
@@ -322,7 +358,21 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		    pthread_mutex_lock(&(it->fileLock));;
                     i=0;
 		    if(it->access_permissions.size()==0){
-			permission_ins.push_back({0,it->size,'r',request->reqipaddrport()});
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Gave the whole permission for file "<<request->filename()<< " size= "<< it->size<< " request end byte= "<< request->endbyte();
+
+#endif
+			if(it->size>request->endbyte()){
+				permission_ins.push_back({0,it->size,'r',request->reqipaddrport()});
+				reply->set_startbyte(0);
+	    			reply->set_endbyte(it->size);
+			}
+			else{
+				permission_ins.push_back({0,request->endbyte(),'r',request->reqipaddrport()});
+				reply->set_startbyte(0);
+	    			reply->set_endbyte(request->endbyte());
+				
+			}
 		    }
 		    else{
 		            for(it2=it->access_permissions.begin();it2 != it->access_permissions.end(); it2++){
@@ -417,20 +467,39 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		            }
 		            permission_ins.push_back({request->startbyte(),request->endbyte(),'r',request->reqipaddrport()});
 			}
-			cout << "DEL:";
+			cout <<"\n"<<__func__<< " DELETED Permissions:" << permission_del.size();
 		    	i=0;
 		    	for(it2=permission_del.begin();it2 != permission_del.end(); it2++){
 			    it->access_permissions.erase(it->access_permissions.begin()+index[i]-i);
 			    i++;
-			
-			    std::cout << it2->start_byte << ' ' << it2->end_byte <<' ';
+			  
+			    std::cout <<'\n'<< it2->start_byte << ' ' << it2->end_byte ;
 		        }
-		        cout << "\nINS:";
+			if(permission_ins.size()==1 && it->access_permissions.size()==0){
+				cout <<"\n"<<__func__<< " Inserting Whole Permissions:"<< permission_ins.size();
+				if(it->size>request->endbyte()){
+					it->access_permissions.push_back({0,it->size,'r',request->reqipaddrport()});
+					reply->set_startbyte(0);
+		    			reply->set_endbyte(it->size);
+					std::cout <<'\n'<< 0 << ' ' << it->size <<' ';
+				}
+				else{
+					it->access_permissions.push_back({0,request->endbyte(),'r',request->reqipaddrport()});
+					reply->set_startbyte(0);
+		    			reply->set_endbyte(request->endbyte());
+					std::cout <<'\n'<< 0 << ' ' << request->endbyte() <<' ';
+				
+				}
+				
+			}
+			else{
+				cout <<"\n"<<__func__<< " INSERTED Permissions:"<< permission_ins.size();
 
-		        for(it2=permission_ins.begin();it2 != permission_ins.end(); it2++){
-			    it->access_permissions.push_back(*it2);
-			    std::cout << it2->start_byte << ' ' << it2->end_byte <<' ';
-		        }
+				for(it2=permission_ins.begin();it2 != permission_ins.end(); it2++){
+				    it->access_permissions.push_back(*it2);
+				    std::cout <<'\n'<< it2->start_byte << ' ' << it2->end_byte <<' ';
+				}
+			}
 			pthread_mutex_unlock(&(it->fileLock));;
 		     }
 		

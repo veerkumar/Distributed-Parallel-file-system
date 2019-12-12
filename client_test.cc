@@ -6,7 +6,8 @@
 
 int main(int argc, char *argv[])
 {
-  int ifdes, fdes;
+  int ifdes;
+  uint32_t fdes;
   int err_value;
   char input_fname[20];
   char *buf;
@@ -33,9 +34,10 @@ int main(int argc, char *argv[])
   if (file.is_open())
   {
 	cout<<"\nFIle is open";
+	cout <<"\nClient Test";
     while ( getline (file,line) )
     {
-      cout << line << '\n';
+      cout <<"\n"<< line ;
     }
     file.close();
   }
@@ -55,12 +57,12 @@ int main(int argc, char *argv[])
       cout<<"Error opening file\n";
       exit(0);
     }
-/*
+
   //At Client 1
   //Write the first 200 bytes of data from the input file onto pfs_file
-  err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);
+  err_value = pfs_write(fdes, (void *)buf, 200, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
-*/
+
   //pfs_close(fdes);
 
   free(buf); 

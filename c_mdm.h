@@ -33,15 +33,15 @@ extern meta_data_manager_client *mdm_service;
 
 int mm_create_new_file(const char *filename, int stripe_width) ;
 int mm_open_file(const char *filename, const char mode);
- int mm_get_read_permission (int fdis, size_t nbyte, off_t offset);
- int mm_get_write_permission (int fdis, size_t nbyte, off_t offset);
+ int mm_get_read_permission (uint32_t fdis, size_t nbyte, off_t offset);
+ int mm_get_write_permission (uint32_t fdis, size_t nbyte, off_t offset);
 int mm_delete_file(const char *filename);
 int mm_get_fstat(string filename, struct pfs_stat *buf);
 
 extern string client_server_ip_port ;
 extern map<string,file_info_store*> file_dir;
 
-extern map<int, string> fdis_to_filename_map;
+extern map<uint32_t, string> fdis_to_filename_map;
 
 extern map<string,pair<int,int>> token_map;
 

@@ -7,7 +7,7 @@
 meta_data_manager_client *mdm_service;
 map<string,file_info_store*> file_dir;
 
-map<int, string> fdis_to_filename_map;
+map<uint32_t, string> fdis_to_filename_map;
 
 map<string,pair<int,int>> token_map;
 
@@ -210,7 +210,7 @@ initialize (int argc, char *argv[]) {
 #endif
 	set_ipaddr_port();
 	/* Intialize cache */
-	c_m = new cache_manager();
+	c_m = new cache_manager;
 
 
 	/* Create harvester thread, which will read from 
@@ -267,7 +267,7 @@ int pfs_open(const char *filename, const char mode){
 	return mm_open_file(filename, mode);
 }
 
-size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit){
+size_t pfs_read(uint32_t filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit){
 
 	int start = 0, end = 0;
 	
@@ -306,7 +306,7 @@ size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_h
       return c_m->read_file(fdis_to_filename_map[filedes], (char *)buf, offset, offset+nbyte-1, cache_hit);
 }
 
-size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){
+size_t pfs_write(uint32_t filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){
 	
          int start = 0, end = 0;
  
@@ -314,13 +314,24 @@ size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *
  
          /*check if file was opened with read/write */
          file_info_store *file = file_dir[fdis_to_filename_map[filedes]];
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": "<<filedes << " : " << file->global_permission;
+#endif
 
-	 if(file->global_permission.find("w") != string::npos ) {
+
+	 if(file->global_permission.find("w") == string::npos ) {
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": File is not open for writing";
+#endif
 	 	 *cache_hit = 0;
 		 return -1;
 	 }
  
- 
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Checking permissions";
+#endif
          /*Iterate over all the permission and check if we already have the permission*/
          for(auto it = file->access_permission.begin(); it!=file->access_permission.end();it++) {
                  pair<int,int> s_e = (*it).start_end;
@@ -333,6 +344,9 @@ size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *
  
          }
          if(need_permission) {
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Requesting permissions from MM";
+#endif
 		 *cache_hit = 0;
                  if(mm_get_write_permission(filedes, nbyte, offset)<-1) {
                          cout<<"\n Error while getting the permission";
@@ -340,6 +354,13 @@ size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *
  
                  }
          }
+
+#ifdef DEBUG_FLAG
+                cout<<"\n"<<__func__ <<": Permission request accepted";
+		cout<<"\n"<<__func__ <<": Permission request accepted";
+#endif
+
+	
  
          /*at this point we need to write in the cache and harvester will take */	
 	
@@ -349,7 +370,7 @@ size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *
 	return 1;
 }
 
-int pfs_close(int filedes){
+int pfs_close(uint32_t filedes){
 
 	/* clean the cache for this file */
 	c_m->clean_file(fdis_to_filename_map[filedes], "close");
@@ -379,7 +400,7 @@ int pfs_delete(const char *filename) {
 	return 1;
 }
 
-int pfs_fstat(int filedes, struct pfs_stat *buf) {
+int pfs_fstat(uint32_t filedes, struct pfs_stat *buf) {
 		/*Add last modifieed in the messageresposen. */
 	mm_get_fstat(fdis_to_filename_map[filedes], buf);	
 	return 1;

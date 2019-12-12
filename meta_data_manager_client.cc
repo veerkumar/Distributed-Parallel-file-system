@@ -310,7 +310,7 @@ int mm_open_file(const char *filename, const char mode)
 	return file->fdis;
 }
 
-int mm_get_read_permission (int fdis, size_t nbyte, off_t offset) {
+int mm_get_read_permission (uint32_t fdis, size_t nbyte, off_t offset) {
 
 	if(file_dir.find(fdis_to_filename_map[fdis]) == file_dir.end()) {
 		if((file_dir.find(fdis_to_filename_map[fdis])->second)->status < OPENED){
@@ -364,7 +364,7 @@ int mm_get_read_permission (int fdis, size_t nbyte, off_t offset) {
 	return 1;
 }
 
-int mm_get_write_permission (int fdis, size_t nbyte, off_t offset) {
+int mm_get_write_permission (uint32_t fdis, size_t nbyte, off_t offset) {
 
 	if(file_dir.find(fdis_to_filename_map[fdis]) == file_dir.end()) {
 		if((file_dir.find(fdis_to_filename_map[fdis])->second)->status < OPENED){
@@ -409,6 +409,9 @@ int mm_get_write_permission (int fdis, size_t nbyte, off_t offset) {
                          cout<< "\nstart" <<(*it).start_end.first <<"end"<<(*it).start_end.second;
                   }
                   cout<<"\n"<<__func__ <<": file status" << file_dir[fdis_to_filename_map[fdis]]->status;
+		  cout<<"\n";
+		   cout<<"\n";
+			 cout<<"\n";
  #endif
 		return 1;
 	}

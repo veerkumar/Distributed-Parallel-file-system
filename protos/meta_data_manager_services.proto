@@ -35,7 +35,7 @@ message FileAccessRequest {
   string FileName = 5;
   string ReqIpaddrPort = 6;
   uint32 stripewidth = 7;
-  uint64 fdis = 8;  
+  uint32 fdis = 8;  
 }
 
 /* The response message containing request status and token if success 
@@ -53,7 +53,7 @@ message  FileAccessResponse {
   uint64 createTime = 6;
   uint64 lastUpdateTime = 7;
   uint32 fileSize = 8;
-  uint64 fdis = 9;      /* file discripter*/
+  uint32 fdis = 9;      /* file discripter*/
   uint32 stripwidth = 10;
   repeated string serverList = 11;
 }

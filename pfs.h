@@ -1,6 +1,5 @@
 #ifndef PFS_H
 #define PFS_H
-
 #include "config.h"
 #define HARVEST_TIME 30    // In second
 /* Make room for new cache block */
@@ -18,7 +17,7 @@ extern string server_ip_port;
 
 extern map<string,file_info_store*> file_dir;
 
-extern map<int, string> fdis_to_filename_map;
+extern map<uint32_t, string> fdis_to_filename_map;
 
 extern map<string,pair<int,int>> token_map;
 
@@ -27,14 +26,14 @@ int pfs_create(const char *filename, int stripe_width);
 
 int pfs_open(const char *filename, const char mode);
 
-size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit);
+size_t pfs_read(uint32_t filedes, void *buf, size_t nbyte, off_t offset, int *cache_hit);
 
-size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit);
+size_t pfs_write(uint32_t filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit);
 
-int pfs_close(int filedes);
+int pfs_close(uint32_t filedes);
 
 int pfs_delete(const char *filename);
 
-int pfs_fstat(int filedes, struct pfs_stat *buf); // Check the config file for the definition of pfs_stat structure
+int pfs_fstat(uint32_t filedes, struct pfs_stat *buf); // Check the config file for the definition of pfs_stat structure
 
 #endif
