@@ -419,7 +419,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 	map<string,pair<int,int>> blocks_to_fetch;
 	vector<pair<pair<int,int>,char*>> file_chunks;
 	vector<pair<int,int>> missing_chunks; /**/
-	char *temp_buf;
+	char *temp_buf = (char*) buf ;
 	vector<cache_block*> cb_list;
 	sort(map_fname_to_chunks[file_name].begin(),map_fname_to_chunks[file_name].end(), sort_vector_cache_block);
 	cb_list = map_fname_to_chunks[file_name];
@@ -478,23 +478,23 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 		}
 		it++;
 	}
+	int i = 0;
 	if(start< end+1) {
 		/*looks like append*/
 		while( start <= end) {
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Getting Free Block From Cache";
-			cout<<"\n";
+			cout<<"\n"<<__func__<<" Getting Free Block From Cache iteration " <<i++ << "current size : "<<current_written_sz;
 #endif
 			cb = get_free_cache_block();
 
 #ifdef DEBUG_FLAG
 			cout<<"\n"<<__func__<<" Doing Memcpy";
-			cout<<"\n";
 #endif
-
+			int size_to_copy = (CLIENT_CACHE_SIZE*MEGA)>end? (end+1): ((CLIENT_CACHE_SIZE*MEGA)-start+1);
+			cout <<"\n size of copy " <<size_to_copy;
 			memcpy(cb->data, temp_buf+current_written_sz, CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1));
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Memcpy is finished";
+			cout<<"\n"<<__func__<<" Memcpy is finished : data size "<< (CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1)) <<"copyied data is" << cb->data <<"data at source" << temp_buf ;
 			cout<<"\n";
 #endif
 			current_written_sz = current_written_sz +  CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);

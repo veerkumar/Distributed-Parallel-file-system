@@ -10,7 +10,7 @@ using ClientServer::FilePermissionRevokeRequest;
 using ClientServer::FilePermissionRevokeResponse;
 using ClientServer::ClientServerService;
 
-#define INTERFACE "wlp3s0"
+#define INTERFACE "ens33"
 extern string client_server_ip_port ;
 extern string ipAddress;
 extern int port;

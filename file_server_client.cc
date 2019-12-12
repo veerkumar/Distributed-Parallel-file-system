@@ -126,7 +126,8 @@ int file_server_client::fs_write_file_to_server( cache_block *cb, int start, int
 	c_req->req_ipaddr_port = client_server_ip_port;
 	c_req->type = WRITE;
 	c_req->strip_width = file_dir[cb->file_name]->stripe_width;
-	//TODO WRITE DATA IN REQUEST strncpy(c_req->data, cb->data, size);
+	c_req->data =  new char[end-start+1];
+	memcpy(c_req->data, cb->data, end-start+1);
 	
 	c_response = (fs_connections[file_server])->read_write_request_handler(c_req);
 
@@ -141,7 +142,7 @@ int file_server_client::fs_write_file_to_server( cache_block *cb, int start, int
 		return -1;
 	} else {
 	
-	//TODO	handle the request;		
+	//TODO	handle the Response;		
 	}
 	delete(c_req);
 	delete(c_response);

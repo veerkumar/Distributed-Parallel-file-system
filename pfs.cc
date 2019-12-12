@@ -66,7 +66,7 @@ void harvest_block(cache_block *cb) {
 	int temp_start = 0, temp_end = 0, server_index = 0 ;
 	if(cb->dirty == true) {
 		//No need to syncronize this as we are reading and file recepe wont change
-		vector<string> file_recep = c_m->map_file_recep[cb->file_name];
+		vector<string> file_recep = file_dir[cb->file_name]->server_list;
 		/*TODO: one case to handle, while doing this if another thread append a element */                 
 		for (auto dr_it = cb->dirty_range.begin();
 				dr_it != cb->dirty_range.end();
@@ -94,7 +94,6 @@ void harvest_block(cache_block *cb) {
 		}
 		cb->dirty = false;
 	}
-
 }
 
 void harvester(){
@@ -376,7 +375,7 @@ size_t pfs_write(uint32_t filedes, const void *buf, size_t nbyte, off_t offset, 
  
          /*at this point we need to write in the cache and harvester will take */	
 	
-	 c_m->write_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte, cache_hit);
+	 c_m->write_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte-1, cache_hit);
 	 file_dir[fdis_to_filename_map[filedes]]->status == WRITTEN;
 	
 	return 1;

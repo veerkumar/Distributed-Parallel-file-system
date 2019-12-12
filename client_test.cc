@@ -31,13 +31,16 @@ int main(int argc, char *argv[])
   ifstream file (input_fname);
 
   buf = new char[5*ONEKB];
+  
   if (file.is_open())
   {
 	cout<<"\nFIle is open";
 	cout <<"\nClient Test";
+	int i=0;
     while ( getline (file,line) )
     {
-      cout <<"\n"<< line ;
+      memcpy(buf+i,(line).c_str(),sizeof(line)) ;
+      i = i + sizeof(line);
     }
     file.close();
   }
