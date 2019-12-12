@@ -159,7 +159,7 @@ class file_server_service_impl : public FileServerService::Service {
 		for(auto it=fileManager.begin();it!=fileManager.end();it++){
 			if((*it).first.compare(request->filename())==0){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<__func__<<" StripWidth ="<< (*it).second);
+	cout<<"\n"<<__func__<<" StripWidth ="<< (*it).second;
 #endif
 				uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
 				name= (*it).first +"."+ std::to_string(fileNumber);
