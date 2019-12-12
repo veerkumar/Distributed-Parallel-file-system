@@ -4,10 +4,14 @@
 #include "file_server_client.h"
 
 file_server_client *fs_service;
+map<string, file_server_client*> fs_connections;
 
- void file_server_client::create_connection_with_server(string ip_port) {
-	fs_service->fs_connections[ip_port] =  new file_server_client(grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials()));
-    }
+void create_connection_with_server(string ip_port) {
+#ifdef DEBUG_FLAG
+                 cout<<"\n\n"<<__func__ <<": Creating new connection with file server :"<<ip_port;
+#endif
+       fs_connections[ip_port] =  new file_server_client(grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials()));
+ }
 
 void 
 print_response(fs_read_write_response_t *c_response) {

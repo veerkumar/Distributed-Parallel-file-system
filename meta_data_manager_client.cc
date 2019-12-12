@@ -286,29 +286,20 @@ int mm_open_file(const char *filename, const char mode)
 #endif
 		for(int i = 0; i < c_response->server_list.size(); i++) {
 			file->server_list.push_back(c_response->server_list[i]);
-			string temp = c_response->server_list[i];
-			cout<<" "<< temp;
-
-
-			cout<<"\n";
-			cout<<"\n";
-			cout<<"\n";
-			cout<<"\n";
-
-			/*if(fs_service->fs_connections.find(temp) == fs_service->fs_connections.end()){
+			
+			if(fs_connections.find(c_response->server_list[i]) == fs_connections.end()){
 			 //Create a new connection with the file server
-				fs_service->create_connection_with_server(c_response->server_list[i]);
+				create_connection_with_server(c_response->server_list[i]);
 #ifdef DEBUG_FLAG
                  cout<<"\n                    "<< c_response->server_list[i];
 #endif
-			}*/
+			}
 		}
 
 		file_dir[filename] = file;
 		fdis_to_filename_map[c_response->fdis] = filename;
 	}
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<":";
                  cout<<"\n"<<__func__ <<": fdis" <<file->fdis;
                  cout<<"\n"<<__func__ <<": creation time" << file->create_time;
                  cout<<"\n"<<__func__ <<": access time" << file->last_modified_time;
