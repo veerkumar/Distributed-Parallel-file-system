@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
       cout<<"Unable to create a file\n";
       exit(0);
     }
-/*
+
   // All the clients open the file 
   fdes = pfs_open("pfs_file1", 'w');
   if(fdes < 0)
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
       cout<<"Error opening file\n";
       exit(0);
     }
-
+/*
   //At Client 1
   //Write the first 200 bytes of data from the input file onto pfs_file
   err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);

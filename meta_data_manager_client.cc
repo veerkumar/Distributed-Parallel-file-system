@@ -268,11 +268,18 @@ int mm_open_file(const char *filename, const char mode)
 		file->file_size = c_response->file_size;
 		file->stripe_width = c_response->stripe_width;
 		file->fdis= c_response->fdis;
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": file name : "<<filename;
+                 cout<<"\n"<<__func__ <<": server list : ";
+#endif
 		for(int i = 0; i < c_response->server_list.size(); i++) {
 			file->server_list.push_back(c_response->server_list[i]);
 			if(fs_service->fs_connections.find(c_response->server_list[i]) == fs_service->fs_connections.end()){
 			/*Create a new connection with the file server*/
 				fs_service->create_connection_with_server(c_response->server_list[i]);
+#ifdef DEBUG_FLAG
+                 cout<<"\n                    "<< c_response->server_list[i];
+#endif
 			}
 		}
 
