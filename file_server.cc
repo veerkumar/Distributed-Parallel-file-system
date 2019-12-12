@@ -3,7 +3,7 @@
 #include "config.h"
 
 
-#define INTERFACE "ens33"
+#define INTERFACE "wlp3s0"
 
 
 string ipAddress;
@@ -139,7 +139,7 @@ class file_server_service_impl : public FileServerService::Service {
 	Status fileReadWriteRequestHandler (ServerContext* context,const  FileReadWriteRequest* request, FileReadWriteResponse* reply) override {
 
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<__func__<<"FS gets request";
+	cout<<"\n\n"<<__func__<<" FS received request";
 
 #endif
 	    FILE *fid;
@@ -149,15 +149,18 @@ class file_server_service_impl : public FileServerService::Service {
 	    string name;
 	    if (request->type() == FileReadWriteRequest::READ) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"READ from file server";
-	    	cout<<"\n"<<request->reqipaddrport();
-             	cout<<"\n"<<request->startbyte();
-             	cout<<"\n"<<request->endbyte();
-             	cout<<"\n"<<request->requestid();
-             	cout<<"\n"<<request->filename();
+	cout<<"\n"<<__func__<<" READ from file server";
+	cout<<"\n"<<__func__<<" Request IP Address ="<< request->reqipaddrport();
+        cout<<"\n"<<__func__<<" Request Start Byte = "<< request->startbyte();
+        cout<<"\n"<<__func__<<" Request End Byte = "<< request->endbyte();
+        cout<<"\n"<<__func__<<" Request Request ID ="<< request->requestid();
+        cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
 #endif
 		for(auto it=fileManager.begin();it!=fileManager.end();it++){
 			if((*it).first.compare(request->filename())==0){
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" StripWidth ="<< (*it).second;
+#endif
 				uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
 				name= (*it).first +"."+ std::to_string(fileNumber);
 				fid=fopen(name.c_str(),"r");
@@ -167,6 +170,10 @@ class file_server_service_impl : public FileServerService::Service {
 				uint32_t i=request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE);
 				uint32_t offset=(((i-i%7)/(*it).second)*((*it).second-1)*(STRIP_SIZE*1024*PFS_BLOCK_SIZE))+(i%(*it).second)*4096;
 				uint32_t startByte=request->startbyte()-offset;
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Reading File =" << name;
+	cout<<"\n"<<__func__<<" Offset ="<< startByte;
+#endif
 			  	if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
 				fseek(fid,startByte,SEEK_SET);
 			  	// copy the file into the buffer:
@@ -181,14 +188,14 @@ class file_server_service_impl : public FileServerService::Service {
 		reply->set_reqstatus(FileReadWriteResponse::ERROR);
 		return Status::CANCELLED;
              	
-	    } else {
+	    } else if (request->type() == FileReadWriteRequest::WRITE) {
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<"Write from file server";
-		    cout<<"\n"<<request->reqipaddrport();
-		    cout<<"\n"<<request->startbyte();
-		    cout<<"\n"<<request->endbyte();
-		    cout<<"\n"<<request->requestid();
-		    cout<<"\n"<<request->filename();
+	cout<<"\n"<<__func__<<" Write to file server";
+	cout<<"\n"<<__func__<<" Request IP Address ="<< request->reqipaddrport();
+        cout<<"\n"<<__func__<<" Request Start Byte = "<< request->startbyte();
+        cout<<"\n"<<__func__<<" Request End Byte = "<< request->endbyte();
+        cout<<"\n"<<__func__<<" Request Request ID ="<< request->requestid();
+        cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
 #endif
 		    uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
 		    name= request->filename() +"."+ std::to_string(fileNumber);
@@ -198,6 +205,10 @@ class file_server_service_impl : public FileServerService::Service {
 		    uint32_t i=request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE);
 		    uint32_t offset=(((i-i%7)/request->stripwidth())*(request->stripwidth()-1)*(STRIP_SIZE*1024*PFS_BLOCK_SIZE))+(i%request->stripwidth())*4096;
 		    uint32_t startByte=request->startbyte()-offset;
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Writing File =" << name;
+	cout<<"\n"<<__func__<<" Offset ="<< startByte;
+#endif
 		    fseek(fid,startByte,SEEK_SET);
 		    fwrite ((void *)&(request->data()),1,request->endbyte()-request->startbyte()+1,fid);
 		    fclose(fid);		    	
@@ -207,12 +218,28 @@ class file_server_service_impl : public FileServerService::Service {
 			if((*it).first.compare(request->filename())==0){
 				found=1;
 				continue;
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" File is available " << name;
+#endif
 			}
 		    }
-		    if(found==0)
+		    if(found==0){
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" File is new " << name;
+#endif
 			fileManager.push_back(make_pair(request->filename(),request->stripwidth()));
-		    		    	
+		    }
 		    mdm_service->update_last_modified_time(request->filename(),request->endbyte());
+	    }else {
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" DELETE from file server";
+	cout<<"\n"<<__func__<<" Request IP Address ="<< request->reqipaddrport();
+        cout<<"\n"<<__func__<<" Request Request ID ="<< request->requestid();
+        cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
+#endif
+		   
+		string del="exec rm -r ./"+request->filename()+"*";
+		system(del.c_str());
 	    }
 
             return Status::OK;
