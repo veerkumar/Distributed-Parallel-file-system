@@ -19,9 +19,17 @@ class cache_block {
 
 };
 class cache {
-	public:
+	public: 
+		mutex mutex_lru_list;
+		list<cache_block*> lru_list;
 		cache_block **slots;
+		unordered_map<cache_block*, list<cache_block*>::iterator> lru_indexing;
+			
+		mutex mutex_lru_indexing;
 		cache();
+		void refer(cache_block* cb);
+		void display_lru_list();
+		void lru_item_delete(cache_block* cb);
 };
 class cache_manager {
 	public:

@@ -140,8 +140,6 @@ void harvester_process() {
 				  remove from allocated queue and add in free list. 
 			if not dirty: Just empty "data" and append in the free list
 */
-/* TODO: Currently fetched from back of allocated list, will need to fetch from prority queue 
-*/
 void flusher() {
 #ifdef DEBUG_FLAG
 	cout<<"\n\nfluser: starting executing";
@@ -153,21 +151,21 @@ void flusher() {
 	filled_per = (current_sz/(ROW*COLUMN))*100;
 	cache_block *cb = NULL;
 	if(filled_per >= FLUSH_HIGH_MARK ) { 
+		reduce_to_sz = (FLUSH_LOW_MARK/100)*(ROW*COLUMN);
+
 #ifdef DEBUG_FLAG
-		cout<<"\nflusher: Reached high water mark";
+		cout<<"\n"<<__func__ <<": Reaching cache from: "<<current_sz<<" to: "<<reduce_to_sz;
 #endif
-		reduce_to_sz = (FLUSH_LOW_MARK/100)*(ROW*COLUMN);	
-		
-		for (auto it = c_m->allocated_list.rbegin();
-			 it != c_m->allocated_list.rend();
-			 ++it) {
-			cb = *it;
+
+		while( (c_m->allocated_list.size() - reduce_to_sz) <= 0) {
+			cb = c_m->obj_cache->lru_list.back();	
+
 			if(cb->dirty == false) {
 #ifdef DEBUG_FLAG_VERBOSE
 				cout<<"\n fluser: Non-dirty filename:"<<cb->file_name;
 #endif
 				c_m->add_to_back_free_list_l (cb);
-				c_m->rm_from_allocated_list_l(it);
+				c_m->rm_from_allocated_list_l(cb);
 			} else {
 #ifdef DEBUG_FLAG_VERBOSE
 				cout<<"\n fluser: Dirty block filename:"<<cb->file_name;
@@ -175,8 +173,9 @@ void flusher() {
 				harvest_block(cb);
 				/* Remove from the dirty list */
 				c_m->add_to_back_free_list_l (cb);
-				c_m->rm_from_allocated_list_l (it);
+				c_m->rm_from_allocated_list_l (cb);
 			}
+			c_m->obj_cache->lru_item_delete(cb);
 		}
 	}
 }

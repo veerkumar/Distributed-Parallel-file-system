@@ -117,10 +117,17 @@ bool cache_manager::add_to_front_allocated_list_l (cache_block *cb) {
 	mutx_allocated_list.unlock();
 	return true;
 }
-/*
+
 bool cache_manager::rm_from_allocated_list_l (cache_block *cb) {
+	mutx_allocated_list.lock();
+	auto it = find(allocated_list.begin(), allocated_list.end(),cb);
+	allocated_list.erase(it);
+	(*it)->clean_cache_block(cb);
+	rm_from_map_fname_chunks_l(cb->file_name, cb);
+	mutx_allocated_list.unlock();
+
 	return true;
-}*/
+}
 
 bool cache_manager::rm_from_allocated_list_l ( vector<cache_block*>::reverse_iterator& it) {
 	mutx_allocated_list.lock();
@@ -164,6 +171,50 @@ int sort_by_start_file_chunk_vector(const pair<pair<int,int>,char*> &a, const pa
 
 }
 
+
+void cache::refer(cache_block* cb) {
+
+	if(lru_indexing.find(cb) != lru_indexing.end()) {
+
+		lru_list.erase(lru_indexing[cb]);
+
+		lru_list.push_front(cb);
+		lru_indexing[cb] = lru_list.begin();
+	} else {
+		lru_list.push_front(cb);
+		lru_indexing[cb] = lru_list.begin();
+
+	}
+
+
+}
+
+void cache::lru_item_delete(cache_block* cb){
+
+	if(lru_indexing.find(cb) != lru_indexing.end())  { 
+			mutex_lru_indexing.lock();
+			mutex_lru_list.lock();	
+			lru_list.erase(lru_indexing[cb]);
+			lru_indexing.erase(cb);
+			mutex_lru_list.unlock();	
+			mutex_lru_indexing.unlock();	
+	}
+}
+
+void cache::display_lru_list(){
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<":";
+#endif
+		for(auto it = lru_list.begin(); it!= lru_list.end();it++){
+			cout<<"\n           file_name      : "<< (*it)->file_name;
+			cout<<"\n           start_name     : "<< (*it)->start_index;
+			cout<<"\n           end_index      : "<< (*it)->end_index;
+			cout<<"\n           Dirty          : "<< (*it)->dirty;
+			cout<<"\n           dirty list size: "<< (*it)->file_name;
+			cout<<"\n";
+		}
+}
+
 int cache_manager::read_file (string file_name, char *buf, int start,int end, int *cache_hit) {
 	/*START and END  includes boundries*/
 	bool all_chunks_available = false;
@@ -197,6 +248,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 		if (start>=cb->start_index && start <= cb->end_index) {
 			if(end <= cb->end_index) {
 				temp_buf = new char[end-start+1]; // 0 to 199 is 200  but 199-0 is 199
+				obj_cache->refer(cb);
 				memcpy(temp_buf, cb->data+(cb->start_index-start),end-start+1 );
 				file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
 				start = end;
@@ -207,6 +259,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 
 			} else {
 				temp_buf = new char[cb->end_index-start+1]; 
+				obj_cache->refer(cb);
 				memcpy(temp_buf, cb->data+(cb->start_index-start),cb->end_index-start+1 );
 				file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
 				start = cb->end_index + 1;
@@ -247,6 +300,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 				cb->file_name = file_name;
 				cb->dirty = false;
 				add_to_front_allocated_list_l(cb);
+				obj_cache->refer(cb); /*For LRU*/
 			} else {
 				cout<<"\nerror while reading file from the file server";
 			}
@@ -298,6 +352,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
                          /*this block is completely out of range*/
 		       cb = get_free_cache_block();
                        memcpy(cb->data, temp_buf+current_written_sz, cb->start_index>end?end:(cb->start_index-1));
+			obj_cache->refer(cb); /*For LRU*/
 			current_written_sz = current_written_sz + cb->start_index>end?end:(cb->start_index); // not putting -1 as it will be use to more 1 more position where next time it will write
                        cb->start_index = start;
                        cb->end_index = cb->start_index>end?end:(cb->start_index-1);
@@ -319,6 +374,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
                          if(end <= cb->end_index) {
 				 /*Over will happen compeletly  inside this block*/
                                  memcpy(cb->data+(cb->start_index-start), temp_buf+current_written_sz,end-start+1 );
+				 obj_cache->refer(cb); /*For LRU*/
 				 current_written_sz = current_written_sz + end-start+1;
 				 cb->dirty_range.push_back(make_pair(start, end));
 
@@ -331,6 +387,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
                          } else {
 			 	/* partiall write will happen here and overflow to next block */
                                  memcpy(cb->data+(cb->start_index-start),temp_buf+current_written_sz, cb->end_index-start+1 );
+			       	obj_cache->refer(cb); /*For LRU*/
 				 current_written_sz = current_written_sz + cb->end_index-start+1;
                                  file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
                                  start = cb->end_index + 1;
@@ -351,6 +408,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
                 cb->dirty = true;
                 cb->dirty_range.push_back(make_pair(start, CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start)));
                 add_to_front_allocated_list_l(cb);
+		obj_cache->refer(cb); /*For LRU*/
 		start = CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);
 	     }
 	}
@@ -365,5 +423,4 @@ bool cache_manager::clean_file (string file_name, string operation) {
 	
 		/*delete, remove dirty block for this file and also remove it from the map */
 	}
-
 }
