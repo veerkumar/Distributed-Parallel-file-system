@@ -446,8 +446,16 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		    reply->set_createtime(it->creation_time);
 		    reply->set_lastupdatetime(it->modification_time);
 		    reply->set_filesize(it->size);
-		    for(auto it2=it->server_name.begin();it2 != it->server_name.end(); it2++)
+		    reply->set_fdis(it->fileID);
+		    reply->set_stripwidth(it->stripe_width);
+		    int count=0;
+		    for(auto it2=it->server_name.begin();it2 != it->server_name.end(); it2++,count++){
 			reply->add_serverlist(*it2);
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Server "<<count << " " <<*it2;
+
+#endif
+		    }
 		    pthread_mutex_unlock(&(it->fileLock));;
 		    
 		}
