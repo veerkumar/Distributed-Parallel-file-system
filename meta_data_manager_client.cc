@@ -1,7 +1,7 @@
 #include "commons.h"
 #include "config.h"
 #include "c_mdm.h"
-
+#include "file_server_client.h"
 
 int get_random_number () {
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -252,6 +252,10 @@ int mm_open_file(const char *filename, const char mode)
 		file->fdis= c_response->fdis;
 		for(int i = 0; i < c_response->server_list.size(); i++) {
 			file->server_list.push_back(c_response->server_list[i]);
+			if(fs_service->fs_connections.find(c_response->server_list[i]) == fs_service->fs_connections.end()){
+			/*Create a new connection with the file server*/
+				fs_service->create_connection_with_server(c_response->server_list[i]);
+			}
 		}
 
 		file_dir[filename] = file;

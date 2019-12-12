@@ -25,6 +25,7 @@ message FileReadWriteRequest {
   string FileName = 5;
   string ReqIpaddrPort = 6;
   bytes  data = 7;         //This will be filled while writing file to the server
+  uint32 stripwidth = 8;
 }
 
 /* The response message containing request status and token if success 

@@ -21,7 +21,9 @@ class file_server_client {
 		map<string, file_server_client*> fs_connections;
                 file_server_client(std::shared_ptr<Channel> channel): stub_(FileServerService::NewStub(channel)){};
                 fs_read_write_response_t* read_write_request_handler(fs_read_write_request_t *c_req);
+		void create_connection_with_server(string ip_port);
 		int fs_write_file_to_server(cache_block *cb, int start, int end, string file_server);
+		int fs_read_file_to_server(string file_name, char *buf, int start, int end, string file_server);
 };
 
 extern file_server_client *fs_service;

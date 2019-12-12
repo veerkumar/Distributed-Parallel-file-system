@@ -3,6 +3,8 @@
 #define ROW 200
 #define COLUMN 200
 
+extern map<string,file_info_store*> file_dir;
+
 class cache_block {
 	public:
 		bool dirty;
@@ -13,7 +15,7 @@ class cache_block {
 		char* data;
 		cache_block();
 		~cache_block();
-		bool clean_cache_block();
+		bool clean_cache_block(cache_block *cb);
 
 };
 class cache {
@@ -36,6 +38,7 @@ class cache_manager {
 		map<string,vector<string>> map_file_recep;
 		cache_manager();
 		cache* get_cache_obj () ;
+		cache_block* get_free_cache_block ();
 		bool add_to_back_free_list_l (cache_block *cb);
 		bool add_to_front_free_list_l (cache_block *cb) ;
 		bool rm_from_free_list_l (cache_block *cb) ;
@@ -48,7 +51,7 @@ class cache_manager {
 		bool rm_from_allocated_list_l (cache_block *cb);
 		bool rm_from_allocated_list_l ( vector<cache_block*>::reverse_iterator& it);
 		bool rm_from_allocated_list_l ( vector<cache_block*>::iterator& it);
-		bool add_to_map_fname_chunks_l (cache_block *cb);
+		bool add_to_map_fname_chunks_l (string file_name, cache_block *cb);
 		bool rm_from_map_fname_chunks_l (string file_name, cache_block* cb);
 		
 		int read_file (string file_name, void *buf, int start,int end, int *cache_hit);

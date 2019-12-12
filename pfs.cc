@@ -164,7 +164,7 @@ void flusher() {
 #ifdef DEBUG_FLAG_VERBOSE
 				cout<<"fluser: Non-dirty filename:"<<cb->file_name;
 #endif
-				cb->clean_cache_block();
+				cb->clean_cache_block(cb);
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l(it);
 			} else {
@@ -173,7 +173,7 @@ void flusher() {
 #endif
 				harvest_block(cb);
 				/* Remove from the dirty list */
-				cb->clean_cache_block();
+				cb->clean_cache_block(cb);
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l (it);
 			}
@@ -264,20 +264,17 @@ size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_h
 			need_permission = false;
 			break;
 		}
-	
-	
 	}	
 	if(need_permission) {
 		if(mm_get_read_permission( filedes, nbyte, offset)<-1) {
 			cout<<"\n Error while getting the permission";
 			return 0;
-		
 		}
 	}
 
-	/* read file from then fileserver */
+	/* read file from then cache using cache_manager */
 
-      return c_m->read_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte, cache_hit);
+      return c_m->read_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte-1, cache_hit);
 }
 
 size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){

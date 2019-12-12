@@ -5,7 +5,7 @@
 
 file_server_client *fs_service;
 
- bool create_connection_with_client(string ip_port) {
+ void file_server_client::create_connection_with_server(string ip_port) {
 	fs_service->fs_connections[ip_port] =  new file_server_client(grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials()));
     }
 
@@ -81,6 +81,7 @@ make_req_payload (FileReadWriteRequest *payload,
 	payload->set_filename(req->file_name);
 	payload->set_reqipaddrport(req->req_ipaddr_port);
 	payload->set_data(req->data, req->end_byte-req->start_byte);
+	payload->set_stripwidth(req->strip_width);
 }
 
 
@@ -109,7 +110,7 @@ fs_read_write_response_t* file_server_client::read_write_request_handler(fs_read
 
 
 }
-int file_server_client::fs_write_file_to_server(cache_block *cb, int start, int end, string file_server) {
+int file_server_client::fs_write_file_to_server( cache_block *cb, int start, int end, string file_server) {
 	fs_read_write_request_t *c_req = new fs_read_write_request_t;
 	fs_read_write_response_t *c_response = NULL;
 	//char *data = new char
@@ -120,6 +121,7 @@ int file_server_client::fs_write_file_to_server(cache_block *cb, int start, int 
 	c_req->file_name = cb->file_name;
 	c_req->req_ipaddr_port = client_server_ip_port;
 	c_req->type = WRITE;
+	c_req->strip_width = file_dir[cb->file_name]->stripe_width;
 	//TODO WRITE DATA IN REQUEST strncpy(c_req->data, cb->data, size);
 	
 	c_response = (fs_connections[file_server])->read_write_request_handler(c_req);
@@ -140,4 +142,36 @@ int file_server_client::fs_write_file_to_server(cache_block *cb, int start, int 
 	delete(c_req);
 	delete(c_response);
 	return 1;
+}
+int file_server_client:: fs_read_file_to_server(string file_name, char *buf, int start, int end, string file_server) {
+	fs_read_write_request_t *c_req = new fs_read_write_request_t;
+        fs_read_write_response_t *c_response = NULL;
+        //char *data = new char
+
+        c_req->start_byte  = start;
+        c_req->end_byte = end;
+        c_req->request_id = get_random_number();
+        c_req->file_name = file_name;
+        c_req->req_ipaddr_port = client_server_ip_port;
+        c_req->type = READ;
+	c_req->strip_width = file_dir[file_name]->stripe_width;
+
+        c_response = (fs_connections[file_server])->read_write_request_handler(c_req);
+
+#ifdef DEBUG_FLAG
+        cout<<"Response recieved";
+        print_response(c_response);
+#endif
+        if(c_response->code != OK) {
+                cout<< "Error occured, possibly similar file exists";
+                delete(c_req);
+                delete(c_response);
+                return -1;
+        } else {
+
+	     memcpy(buf, c_response->data, start-end+1);
+        }
+        delete(c_req);
+        delete(c_response);
+        return start-end+1;
 }

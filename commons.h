@@ -86,6 +86,7 @@ typedef struct fs_read_write_request_ {
   string file_name;
   string req_ipaddr_port;
   char *data;
+  int strip_width;
 } fs_read_write_request_t;
 
 typedef struct  fs_read_write_response_ {
