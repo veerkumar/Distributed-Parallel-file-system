@@ -138,18 +138,24 @@ class file_server_service_impl : public FileServerService::Service {
         
 	Status fileReadWriteRequestHandler (ServerContext* context,const  FileReadWriteRequest* request, FileReadWriteResponse* reply) override {
 
-            std::cout << "\nGot the message ";
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<"FS gets request";
+
+#endif
 	    FILE *fid;
 	    char *buffer;
 	    size_t result;
 	    int found=0;
 	    string name;
 	    if (request->type() == FileReadWriteRequest::READ) {
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<"READ from file server";
 	    	cout<<"\n"<<request->reqipaddrport();
              	cout<<"\n"<<request->startbyte();
              	cout<<"\n"<<request->endbyte();
              	cout<<"\n"<<request->requestid();
              	cout<<"\n"<<request->filename();
+#endif
 		for(auto it=fileManager.begin();it!=fileManager.end();it++){
 			if((*it).first.compare(request->filename())==0){
 				uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
@@ -176,13 +182,14 @@ class file_server_service_impl : public FileServerService::Service {
 		return Status::CANCELLED;
              	
 	    } else {
-
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<"Write from file server";
 		    cout<<"\n"<<request->reqipaddrport();
 		    cout<<"\n"<<request->startbyte();
 		    cout<<"\n"<<request->endbyte();
 		    cout<<"\n"<<request->requestid();
 		    cout<<"\n"<<request->filename();
-		    
+#endif
 		    uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
 		    name= request->filename() +"."+ std::to_string(fileNumber);
 		    fid=fopen(name.c_str(),"w");
