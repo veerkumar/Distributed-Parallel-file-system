@@ -272,7 +272,7 @@ size_t pfs_read(int filedes, void *buf, size_t nbyte, off_t offset, int *cache_h
 
 	/* read file from then cache using cache_manager */
 
-      return c_m->read_file(fdis_to_filename_map[filedes], buf, offset, offset+nbyte-1, cache_hit);
+      return c_m->read_file(fdis_to_filename_map[filedes], (char *)buf, offset, offset+nbyte-1, cache_hit);
 }
 
 size_t pfs_write(int filedes, const void *buf, size_t nbyte, off_t offset, int *cache_hit){
