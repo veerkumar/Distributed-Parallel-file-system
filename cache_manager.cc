@@ -171,6 +171,58 @@ int sort_by_start_file_chunk_vector(const pair<pair<int,int>,char*> &a, const pa
 
 }
 
+int sort_vector_cache_block (const cache_block* a, const cache_block* b){
+	return (a->start_index < b->start_index);
+}
+
+
+int sort_pair_one_first_element_comp (const pair<int,int> &a, const pair<int,int> &b) {
+	return (a.first < b.first);
+
+}
+int collapse_dirty_list(cache_block *cb) {
+	vector<pair<int,int>> vec = cb->dirty_range;
+	sort(vec.begin(),vec.end(),sort_pair_one_first_element_comp);
+	stack<pair<int,int>> s;
+
+	// push the first interval to stack
+	s.push(vec[0]);
+
+	// Start from the next interval and merge if necessary
+	for (int i = 1 ; i < vec.size(); i++)
+	{
+		// get interval from stack top
+		pair<int, int> top = s.top();
+
+		// if current interval is not overlapping with stack top,
+		// push it to the stack
+		if (top.second < vec[i].first)
+			s.push(vec[i]);
+
+		// Otherwise update the ending time of top if ending of current
+		// interval is more
+		else if (top.second < vec[i].second)
+		{
+			top.second = vec[i].second;
+			s.pop();
+			s.push(top);
+		}
+	}
+
+	// Print contents of stack
+	cout << "\n The Merged Intervals are: ";
+	vec.erase(vec.begin(),vec.end());
+	while (!s.empty())
+	{
+		pair<int,int> t = s.top();
+#ifdef DEBUG_FLAG
+		cout << "[" << t.first << "," << t.second << "] ";
+#endif
+		vec.insert(vec.begin(), make_pair(t.first, t.second));
+		s.pop();
+	}
+}
+
 
 void cache::refer(cache_block* cb) {
 
@@ -227,9 +279,11 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 	vector<pair<int,int>> missing_chunks; /**/
 	char *temp_buf;
 	vector<cache_block*> cb_list;
+	sort(map_fname_to_chunks[file_name].begin(),map_fname_to_chunks[file_name].end(), sort_vector_cache_block);
 	cb_list = map_fname_to_chunks[file_name];
 	cache_block* cb;
-	/* iterate over cache */
+
+	/* iterate over cache blocks of this file*/
 	for(auto it  = cb_list.begin(); it!= cb_list.end() ;){
 		cb = *it;
 		if (cb->start_index > start) {
@@ -343,6 +397,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
          vector<pair<int,int>> missing_chunks; /**/
          char *temp_buf;
          vector<cache_block*> cb_list;
+	 sort(map_fname_to_chunks[file_name].begin(),map_fname_to_chunks[file_name].end(), sort_vector_cache_block);
          cb_list = map_fname_to_chunks[file_name];
          cache_block* cb;
 	 int current_written_sz = 0;
