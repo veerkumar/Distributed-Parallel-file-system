@@ -1,0 +1,39 @@
+diff --git a/client_test.cc b/client_test.cc
+index 47bd0f2..883d16c 100644
+--- a/client_test.cc
++++ b/client_test.cc
+@@ -36,8 +36,8 @@ int main(int argc, char *argv[])
+   FILE * fid=fopen(input_fname,"r");
+   buf = (char*) malloc (sizeof(char)*4*ONEKB);
+   int result = fread (buf,1,4*ONEKB,fid);
+-  cout<<buf;
+-  std::this_thread::sleep_for(std::chrono::seconds(10));
++  //cout<<buf;
++  //std::this_thread::sleep_for(std::chrono::seconds(10));
+   
+ 
+   // create a file only once, say at client 1 
+@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
+   err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);
+   cout<<"Wrote %d bytes to the file\n", err_value;
+   
+-  err_value = pfs_read(fdes, (void *)buf, 2*ONEKB, ONEKB, &cache_hit);
+-  printf("Read %d bytes of data from the file\n", err_value);
++  //err_value = pfs_read(fdes, (void *)buf, 2*ONEKB, ONEKB, &cache_hit);
++  //printf("Read %d bytes of data from the file\n", err_value);
+   std::this_thread::sleep_for(std::chrono::seconds(120));
+   
+   //pfs_close(fdes);
+diff --git a/cs_mdm.h b/cs_mdm.h
+index 877d2cf..084a240 100644
+--- a/cs_mdm.h
++++ b/cs_mdm.h
+@@ -10,7 +10,7 @@ using ClientServer::FilePermissionRevokeRequest;
+ using ClientServer::FilePermissionRevokeResponse;
+ using ClientServer::ClientServerService;
+ 
+-#define INTERFACE "ens33"
++#define INTERFACE "wlp3s0"
+ extern string client_server_ip_port ;
+ extern string ipAddress;
+ extern int port;
