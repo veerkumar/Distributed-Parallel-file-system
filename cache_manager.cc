@@ -306,12 +306,22 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 	sort(map_fname_to_chunks[file_name].begin(),map_fname_to_chunks[file_name].end(), sort_vector_cache_block);
 	cb_list = map_fname_to_chunks[file_name];
 	cache_block* cb;
+#ifdef DEBUG_FLAG
+                 cout<<"\n\n"<<__func__ <<": Entered read file: Start: "<< start<< " end : "<< end << "cache_hit : " << *cache_hit;
+#endif
+
+
 
 	/* iterate over cache blocks of this file*/
 	for(auto it  = cb_list.begin(); it!= cb_list.end() ;){
 		cb = *it;
 		if (cb->start_index > start) {
 			/*this block is completely out of range*/
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<":" << "partially not in the cache chunk_Start: "<< start << " chunk_end : "<< (cb->start_index>end?end:cb->start_index);
+#endif
+
+
 			missing_chunks.push_back(make_pair(start, cb->start_index>end?end:(cb->start_index-1)));
 			start = cb->start_index>end?end:cb->start_index;
 			if(start == end) {
@@ -327,29 +337,48 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 			if(end <= cb->end_index) {
 				temp_buf = new char[end-start+1]; // 0 to 199 is 200  but 199-0 is 199
 				obj_cache->refer(cb);
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Current block start : "<< cb->start_index<< " end: "<< cb->end_index;
+		 cout<< "		: Current pointer is at :" << start;
+#endif
 				memcpy(temp_buf, cb->data+(cb->start_index-start),end-start+1 );
 				file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
 				start = end;
 #ifdef DEBUG_FLAG
-				cout<<"\n2. finished checking blocks, breaking";
+				cout<<"\n2. finished checking blocks, breaking "<< start << " chunk_end : "<< end;
 #endif
 				break;
 
 			} else {
 				temp_buf = new char[cb->end_index-start+1]; 
 				obj_cache->refer(cb);
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Current block start : "<< cb->start_index<< " end: "<< cb->end_index;
+		 cout << "		 :  Current pointer is at :" << start;
+#endif
 				memcpy(temp_buf, cb->data+(cb->start_index-start),cb->end_index-start+1 );
 				file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
 				start = cb->end_index + 1;
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Read some part, it will next from other block. read till: " << start;
+#endif
 			}
 		}
 		it++;
 	}
 	if(end-start !=0) {
 		/* remaining rainge is missing */
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Done reading Blocks in cache : Remaining, start: "<< start << " end: "<< end ;
+
+#endif
 		missing_chunks.push_back(make_pair(start, end));
 	}
 	/* send read request to file server */
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Printing All the missing blocks ";
+#endif
 
 	for(auto it = missing_chunks.begin(); it != missing_chunks.end(); it++) {
 		all_chunks_available = false;
@@ -359,12 +388,19 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 		char *temp_buf = NULL;
 		cache_block *cb = NULL;
 		string server_name ;
+#ifdef DEBUG_FLAG
+                 cout<<"\n " <<"			"<< start_end.first <<" -- "<< start_end.second;
+#endif
 		while(1) {
-			server_index = temp_start/BLOCK_SIZE;
+			server_index = temp_start/(PFS_BLOCK_SIZE*STRIP_SIZE);
 			temp_end = (start_end.second >
-					((server_index+1)*BLOCK_SIZE)-1)?((server_index + 1)*BLOCK_SIZE - 1):start_end.second;
+					((server_index+1)*(PFS_BLOCK_SIZE*STRIP_SIZE))-1)?((server_index + 1)*(PFS_BLOCK_SIZE*STRIP_SIZE) - 1):start_end.second;
 			
 			temp_buf = new char[temp_end-temp_start +1];
+#ifdef DEBUG_FLAG
+                 cout<<"\n					Sending to server: " << server_index;
+		 cout<<"\n						    start: " << temp_start << " end: "<< temp_end;
+#endif
 			server_name = (file_dir[file_name])->server_list[server_index];
 			if(fs_service->fs_read_file_to_server(file_name, temp_buf,
 					temp_start,
@@ -392,18 +428,31 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 	}
 	sort(file_chunks.begin(), file_chunks.end(), sort_by_start_file_chunk_vector);
 	int current = 0;
-	cout<<"";
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n" <<" Got all required chunks, Here the list: ";
+#endif
+
+
 	for(auto it = file_chunks.begin(); it!= file_chunks.end(); it++) {
+#ifdef DEBUG_FLAG
+                 cout<<"\n 				"<< (*it).first.first <<" -- " << (*it).first.second;
+#endif
+
 		memcpy(buf+current, (*it).second,(*it).first.second - (*it).first.first + 1);
 		current = current + ((*it).first.second - (*it).first.first) ;
 		delete ((*it).second);
 	}
-	cout<< "\n Read and returing  size: "<<current;
-	cout<< "\n FILE CONTENT: \n";
-	cout<<buf;
+
 	if(all_chunks_available == false) {
 		cache_hit = 0;
 	}
+#ifdef DEBUG_FLAG
+	cout<< "\n Read and returing  size: "<<current;
+	cout<<"\n cache_hit               : "<<cache_hit;
+	cout<< "\n FILE CONTENT: \n";
+	cout<<buf;
+#endif
 	return current;
 }
 
