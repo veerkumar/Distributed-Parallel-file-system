@@ -81,9 +81,9 @@ void harvest_block(cache_block *cb) {
 			range = *dr_it;
 			temp_start = range.first;
 			while(1) {
-				server_index = temp_start/PFS_BLOCK_SIZE;
+				server_index = temp_start/(PFS_BLOCK_SIZE*STRIP_SIZE);
 				temp_end = (range.second >=
-						((server_index+1)*PFS_BLOCK_SIZE))?((server_index+1)*PFS_BLOCK_SIZE - 1):range.second;
+						((server_index+1)*(PFS_BLOCK_SIZE*STRIP_SIZE)))?((server_index+1)*(PFS_BLOCK_SIZE*STRIP_SIZE) - 1):range.second;
 			 //TODO write_file_to_server function implemention is not done yet	
 			       
 				fs_service->fs_write_file_to_server(cb,
@@ -97,7 +97,6 @@ void harvest_block(cache_block *cb) {
 					break;
 				}
 			}
-
 		}
 		cb->dirty = false;
 	}
