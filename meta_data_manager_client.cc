@@ -44,6 +44,7 @@ extract_response_from_payload(FileAccessResponse Response) {
          c_response->token = Response.token();
          c_response->start_byte = Response.startbyte();
          c_response->end_byte = Response.endbyte();
+         c_response->stripe_width = Response.stripwidth();
 #ifdef DEBUG_FLAG
                  cout<<"\n"<<__func__ <<": server recevied size"<< Response.serverlist_size();
 #endif
