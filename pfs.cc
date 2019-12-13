@@ -128,10 +128,12 @@ void harvester(){
        
 	/* Lock the queue and remove non-dirty block */ 
 	c_m->mutx_dirty_list.lock();
-	for(auto it = c_m->dirty_list.begin(); it != c_m->dirty_list.end(); it++) {
+	for(auto it = c_m->dirty_list.begin(); it != c_m->dirty_list.end(); ) {
 		cache_block *cb = *it;
 		if(cb->dirty == false) {
 			c_m->dirty_list.erase(it); 
+		} else {
+			it++;
 		}
 	}	
 	c_m->mutx_dirty_list.unlock();
