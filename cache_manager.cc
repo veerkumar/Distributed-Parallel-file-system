@@ -539,7 +539,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 		/*looks like append*/
 		while( start <= end) {
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Getting Free Block From Cache iteration " <<i++ << "current size : "<<current_written_sz;
+			cout<<"\n"<<__func__<<" Getting Free Block From Cache iterationi: " << i++ << " , current size : "<<current_written_sz;
 #endif
 			cb = get_free_cache_block();
 
@@ -550,7 +550,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 			cout <<"\n size of copy " <<size_to_copy;
 			memcpy(cb->data, temp_buf+current_written_sz, CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1));
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Memcpy is finished : data size "<< (CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1)) <<"copyied data is" << cb->data <<"data at source" << temp_buf ;
+			cout<<"\n"<<__func__<<" Memcpy is finished : data size "<< (CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1));
 			cout<<"\n";
 #endif
 			current_written_sz = current_written_sz +  CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);
@@ -561,23 +561,16 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 			cb->dirty = true;
 			cb->dirty_range.push_back(make_pair(start, CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start)));
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Cache is added start= "<<cb->start_index <<" end= "<<cb->end_index <<" filename= "<<cb->file_name <<" dirty= "<<cb->dirty;
+			cout<<"\n"<<__func__<<" Cache is added start= "<<cb->start_index <<" end= "<<cb->end_index <<" filename= "<<cb->file_name <<" dirty = "<<cb->dirty;
 			cout<<"\n";
 #endif
 
 			add_to_front_allocated_list_l(cb);
 			add_to_dirty_list_l(cb);
 			obj_cache->refer(cb); /*For LRU*/
-			start = CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);
-
-#ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Added to the front list";
-			cout<<"\n";
-#endif
 			start = CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1);
 
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" New Start"<< start;
 			cout<<"\n";
 #endif
 		}
