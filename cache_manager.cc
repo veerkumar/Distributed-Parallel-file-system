@@ -11,7 +11,7 @@ cache_block:: cache_block() {
 	file_name = "";
 	start_index = 0;
 	end_index = 0;
-	data = new char[CLIENT_CACHE_SIZE*MEGA];
+	data = new char[CACHE_BLOCK_SZ];
 }
 cache_block::~cache_block(){
 	if(data != NULL) {
@@ -546,20 +546,20 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 #ifdef DEBUG_FLAG
 			cout<<"\n"<<__func__<<" Doing Memcpy";
 #endif
-			int size_to_copy = (CLIENT_CACHE_SIZE*MEGA)>end? (end+1): ((CLIENT_CACHE_SIZE*MEGA)-start+1);
+			int size_to_copy = (CACHE_BLOCK_SZ)>end? (end+1): ((CACHE_BLOCK_SZ)-start+1);
 			cout <<"\n size of copy " <<size_to_copy;
-			memcpy(cb->data, temp_buf+current_written_sz, CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1));
+			memcpy(cb->data, temp_buf+current_written_sz, CACHE_BLOCK_SZ>end?end+1:((CACHE_BLOCK_SZ)-start+1));
 #ifdef DEBUG_FLAG
-			cout<<"\n"<<__func__<<" Memcpy is finished : data size "<< (CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1));
+			cout<<"\n"<<__func__<<" Memcpy is finished : data size "<< (CACHE_BLOCK_SZ>end?end+1:((CACHE_BLOCK_SZ)-start+1));
 			cout<<"\n";
 #endif
-			current_written_sz = current_written_sz +  CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start+1);
+			current_written_sz = current_written_sz +  CACHE_BLOCK_SZ>end?end:((CACHE_BLOCK_SZ)-start+1);
 			// not putting -1 as it will be use to more 1 more position where next time it will write
 			cb->start_index = start;
-			cb->end_index =  CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start);
+			cb->end_index =  CACHE_BLOCK_SZ>end?end:((CACHE_BLOCK_SZ)-start);
 			cb->file_name = file_name;
 			cb->dirty = true;
-			cb->dirty_range.push_back(make_pair(start, CLIENT_CACHE_SIZE*MEGA>end?end:((CLIENT_CACHE_SIZE*MEGA)-start)));
+			cb->dirty_range.push_back(make_pair(start, CACHE_BLOCK_SZ>end?end:((CACHE_BLOCK_SZ)-start)));
 #ifdef DEBUG_FLAG
 			cout<<"\n"<<__func__<<" Cache is added start= "<<cb->start_index <<" end= "<<cb->end_index <<" filename= "<<cb->file_name <<" dirty = "<<cb->dirty;
 			cout<<"\n";
@@ -568,7 +568,7 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 			add_to_front_allocated_list_l(cb);
 			add_to_dirty_list_l(cb);
 			obj_cache->refer(cb); /*For LRU*/
-			start = CLIENT_CACHE_SIZE*MEGA>end?end+1:((CLIENT_CACHE_SIZE*MEGA)-start+1);
+			start = CACHE_BLOCK_SZ>end?end+1:((CACHE_BLOCK_SZ)-start+1);
 
 #ifdef DEBUG_FLAG
 			cout<<"\n";
