@@ -358,7 +358,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 		 cout << "		 :  Current pointer is at :" << start;
 #endif
 				memcpy(temp_buf, cb->data+(cb->start_index-start),cb->end_index-start+1 );
-				file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
+				file_chunks.push_back(make_pair(make_pair(start,cb->end_index),temp_buf));
 				start = cb->end_index + 1;
 #ifdef DEBUG_FLAG
                  cout<<"\n"<<__func__ <<": Read some part, it will next from other block. read till: " << start;
@@ -393,10 +393,15 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
                  cout<<"\n " <<"			"<< start_end.first <<" -- "<< start_end.second;
 #endif
 		while(1) {
-			server_index = temp_start/FILE_SERVER_CHUNK_SZ;
-			temp_end = (start_end.second >
-					((server_index+1)*(FILE_SERVER_CHUNK_SZ))-1)?((server_index + 1)*(FILE_SERVER_CHUNK_SZ) - 1):start_end.second;
+				server_index = (temp_start/(FILE_SERVER_CHUNK_SZ))%file_dir[cb->file_name]->server_list.size();
 			
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Server number = "<< server_index;
+#endif
+				temp_end = (start_end.second >=
+						((temp_start/(FILE_SERVER_CHUNK_SZ)+1)*(FILE_SERVER_CHUNK_SZ)))?((temp_start/(FILE_SERVER_CHUNK_SZ)+1)*(FILE_SERVER_CHUNK_SZ) - 1):start_end.second;
+			       
+				
 			temp_buf = new char[temp_end-temp_start +1];
 #ifdef DEBUG_FLAG
                  cout<<"\n					Sending to server: " << server_index;
@@ -441,7 +446,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 #endif
 
 		memcpy(buf+current, (*it).second,(*it).first.second - (*it).first.first + 1);
-		current = current + ((*it).first.second - (*it).first.first) ;
+		current = current + ((*it).first.second - (*it).first.first) + 1;
 		delete ((*it).second);
 	}
 
