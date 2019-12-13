@@ -392,9 +392,9 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
                  cout<<"\n " <<"			"<< start_end.first <<" -- "<< start_end.second;
 #endif
 		while(1) {
-			server_index = temp_start/(PFS_BLOCK_SIZE*STRIP_SIZE);
+			server_index = temp_start/FILE_SERVER_CHUNK_SZ;
 			temp_end = (start_end.second >
-					((server_index+1)*(PFS_BLOCK_SIZE*STRIP_SIZE))-1)?((server_index + 1)*(PFS_BLOCK_SIZE*STRIP_SIZE) - 1):start_end.second;
+					((server_index+1)*(FILE_SERVER_CHUNK_SZ))-1)?((server_index + 1)*(FILE_SERVER_CHUNK_SZ) - 1):start_end.second;
 			
 			temp_buf = new char[temp_end-temp_start +1];
 #ifdef DEBUG_FLAG
@@ -474,10 +474,17 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 	cb_list = map_fname_to_chunks[file_name];
 	cache_block* cb;
 	int current_written_sz = 0;
+#ifdef DEBUG_FLAG
+                 cout<<"\n\n"<< __func__ <<": Starting Processing";
+#endif
+
 	for(auto it  = cb_list.begin(); it!= cb_list.end() ;){
 		cb = *it;
 		if (cb->start_index > start) {
 			/*this block is completely out of range*/
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": ";
+#endif
 			cb = get_free_cache_block();
 			memcpy(cb->data, temp_buf+current_written_sz, cb->start_index>end?end:(cb->start_index-1));
 			obj_cache->refer(cb); /*For LRU*/
