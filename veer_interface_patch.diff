@@ -1,0 +1,25 @@
+diff --git a/cs_mdm.h b/cs_mdm.h
+index 877d2cf..c01aaf6 100644
+--- a/cs_mdm.h
++++ b/cs_mdm.h
+@@ -11,6 +11,7 @@ using ClientServer::FilePermissionRevokeResponse;
+ using ClientServer::ClientServerService;
+ 
+ #define INTERFACE "ens33"
++
+ extern string client_server_ip_port ;
+ extern string ipAddress;
+ extern int port;
+diff --git a/file_server.cc b/file_server.cc
+index d576c4d..4827f28 100644
+--- a/file_server.cc
++++ b/file_server.cc
+@@ -3,7 +3,7 @@
+ #include "config.h"
+ 
+ 
+-#define INTERFACE "wlp3s0"
++#define INTERFACE "ens33"
+ 
+ 
+ string ipAddress;
