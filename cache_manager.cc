@@ -7,6 +7,7 @@ using namespace std;
 cache_manager *c_m;
 
 cache_block:: cache_block() {
+	mutex cb_lock;
 	dirty = false;
 	file_name = "";
 	start_index = 0;

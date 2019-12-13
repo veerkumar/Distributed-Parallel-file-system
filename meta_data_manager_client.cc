@@ -304,6 +304,7 @@ int mm_open_file(const char *filename, const char mode)
                  cout<<"\n"<<__func__ <<": creation time" << file->create_time;
                  cout<<"\n"<<__func__ <<": access time" << file->last_modified_time;
                  cout<<"\n"<<__func__ <<": file status" << file->status;
+                 cout<<"\n"<<__func__ <<": file stripe_width" << file->stripe_width;
 #endif
 	delete(c_req);
 	delete(c_response);

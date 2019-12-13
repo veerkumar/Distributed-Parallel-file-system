@@ -123,7 +123,7 @@ typedef struct file_store_ {
 	uint32_t create_time;
 	uint32_t last_modified_time;
 	uint32_t file_size;
-	int stripe_width;
+	uint32_t stripe_width;
 	uint32_t fdis;
         vector<string> server_list;
 	vector<permission> access_permission;
