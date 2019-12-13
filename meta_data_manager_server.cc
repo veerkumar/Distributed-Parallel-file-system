@@ -126,13 +126,18 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 #ifdef DEBUG_FLAG
         cout<<"\n"<<__func__<<" stripwidth"<< request->stripewidth();
 #endif
-	
-            while(i<request->stripewidth()) 
-	    	for(it3=m_m->server_list.begin();i<request->stripewidth(),it3!=m_m->server_list.end();i++,it3++){
-			n1.server_name.push_back(*it3);
+	    auto it3=m_m->server_list.begin();
+            while(i<request->stripewidth()){
+	    	n1.server_name.push_back(*it3);
 #ifdef DEBUG_FLAG
         cout<<"\n"<<__func__<<" server ->"<<i << "->"<<*it3;
 #endif
+		i++;
+		it3++;
+		if(it3==m_m->server_list.end()){
+			it3=m_m->server_list.begin();
+		}
+
 	    	}
 	    fileList.push_back(n1);
 #ifdef DEBUG_FLAG

@@ -3,7 +3,7 @@
 
 
 #define ONEKB 1024
-
+#define Filesize 400
 int main(int argc, char *argv[])
 {
   int ifdes;
@@ -34,10 +34,10 @@ int main(int argc, char *argv[])
   //buf = new char[4*ONEKB];
   
   FILE * fid=fopen(input_fname,"r");
-  buf = (char*) malloc (sizeof(char)*4*ONEKB);
-  int result = fread (buf,1,4*ONEKB,fid);
-  cout<<buf;
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+  buf = (char*) malloc (sizeof(char)*Filesize);
+  int result = fread (buf,1,Filesize,fid);
+  //cout<<buf;
+  //std::this_thread::sleep_for(std::chrono::seconds(10));
   
 
   // create a file only once, say at client 1 
@@ -58,11 +58,11 @@ int main(int argc, char *argv[])
 
   //At Client 1
   //Write the first 200 bytes of data from the input file onto pfs_file
-  err_value = pfs_write(fdes, (void *)buf, 4*ONEKB, 0, &cache_hit);
+  err_value = pfs_write(fdes, (void *)buf, Filesize, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
   
-  err_value = pfs_read(fdes, (void *)buf, 2*ONEKB, ONEKB, &cache_hit);
-  printf("Read %d bytes of data from the file\n", err_value);
+  //err_value = pfs_read(fdes, (void *)buf, 2*ONEKB, ONEKB, &cache_hit);
+  //printf("Read %d bytes of data from the file\n", err_value);
   std::this_thread::sleep_for(std::chrono::seconds(120));
   
   //pfs_close(fdes);

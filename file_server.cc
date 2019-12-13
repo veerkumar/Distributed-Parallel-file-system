@@ -4,7 +4,7 @@
 
 
 #define INTERFACE "wlp3s0"
-
+#define PFS_CHUNK_SIZE 100
 
 string ipAddress;
 int port;
@@ -161,14 +161,14 @@ class file_server_service_impl : public FileServerService::Service {
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" StripWidth ="<< (*it).second;
 #endif
-				uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
+				uint32_t fileNumber=((request->startbyte()/(PFS_CHUNK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
 				name= (*it).first +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
 				fid=fopen(name.c_str(),"r");
 				reply->set_requestid(request->requestid());
 			     	reply->set_reqstatus(FileReadWriteResponse::OK);
 				buffer = (char*) malloc (sizeof(char)*(request->endbyte()-request->startbyte()+1));
-				uint32_t i=request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE);
-				uint32_t offset=(((i-i%7)/(*it).second)*((*it).second-1)*(STRIP_SIZE*1024*PFS_BLOCK_SIZE))+(i%(*it).second)*4096;
+				uint32_t i=request->startbyte()/(PFS_CHUNK_SIZE);
+				uint32_t offset=(((i-i%7)/(*it).second)*((*it).second-1)*(PFS_CHUNK_SIZE))+(i%(*it).second)*4096;
 				uint32_t startByte=request->startbyte()-offset;
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" Reading File =" << name;
@@ -198,13 +198,13 @@ class file_server_service_impl : public FileServerService::Service {
         cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
 	cout<<"\n"<<__func__<<" Request File Name ="<< request->stripwidth();
 #endif
-		    uint32_t fileNumber=((request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
+		    uint32_t fileNumber=((request->startbyte()/(PFS_CHUNK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
 		    name= request->filename() +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
 		    fid=fopen(name.c_str(),"w");
 		    reply->set_requestid(request->requestid());
 		    reply->set_reqstatus(FileReadWriteResponse::OK);
-		    uint32_t i=request->startbyte()/(STRIP_SIZE*1024*PFS_BLOCK_SIZE);
-		    uint32_t offset=(((i-i%7)/request->stripwidth())*(request->stripwidth()-1)*(STRIP_SIZE*1024*PFS_BLOCK_SIZE))+(i%request->stripwidth())*4096;
+		    uint32_t i=request->startbyte()/(PFS_CHUNK_SIZE);
+		    uint32_t offset=(((i-i%7)/request->stripwidth())*(request->stripwidth()-1)*(PFS_CHUNK_SIZE))+(i%request->stripwidth())*4096;
 		    uint32_t startByte=request->startbyte()-offset;
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" Writing File =" << name;

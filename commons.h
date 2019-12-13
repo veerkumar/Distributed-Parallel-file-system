@@ -26,7 +26,7 @@
 
 #define DEBUG_FLAG 1
 
-#define  FILE_SERVER_CHUNK_SZ (PFS_BLOCK_SIZE*STRIP_SIZE*1024)
+#define  FILE_SERVER_CHUNK_SZ 100
 
 using namespace std;
 enum request_type {

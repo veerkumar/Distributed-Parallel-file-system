@@ -81,9 +81,12 @@ void harvest_block(cache_block *cb) {
 			range = *dr_it;
 			temp_start = range.first;
 			while(1) {
-				server_index = temp_start/(FILE_SERVER_CHUNK_SZ);
+				server_index = (temp_start/(FILE_SERVER_CHUNK_SZ))%file_dir[cb->file_name]->server_list.size();
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Server number = "<< server_index;
+#endif
 				temp_end = (range.second >=
-						((server_index+1)*(FILE_SERVER_CHUNK_SZ)))?((server_index+1)*(FILE_SERVER_CHUNK_SZ) - 1):range.second;
+						((temp_start/(FILE_SERVER_CHUNK_SZ)+1)*(FILE_SERVER_CHUNK_SZ)))?((temp_start/(FILE_SERVER_CHUNK_SZ)+1)*(FILE_SERVER_CHUNK_SZ) - 1):range.second;
 			 //TODO write_file_to_server function implemention is not done yet	
 			       
 				fs_service->fs_write_file_to_server(cb,
