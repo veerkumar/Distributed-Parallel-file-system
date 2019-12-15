@@ -35,6 +35,49 @@ bool cache_block::clean_cache_block(cache_block *cb){
 	return true;
 }
 
+void harvest_block_file(cache_block *cb) {
+
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Harvester BLOCK is running";
+#endif
+	pair<int, int> range;
+	int temp_start = 0, temp_end = 0, server_index = 0 ;
+	if(cb->dirty == true) {
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Block is Dirty";
+#endif
+		//No need to syncronize this as we are reading and file recepe wont change
+		vector<string> file_recep = file_dir[cb->file_name]->server_list;
+		/*TODO: one case to handle, while doing this if another thread append a element */                 
+		for (auto dr_it = cb->dirty_range.begin();
+				dr_it != cb->dirty_range.end();
+				dr_it++) {
+			range = *dr_it;
+			temp_start = range.first;
+			while(1) {
+				server_index = (temp_start/(FILE_SERVER_CHUNK_SZ))%file_dir[cb->file_name]->server_list.size();
+#ifdef DEBUG_FLAG
+		cout<<"\n"<<__func__<<" Server number = "<< server_index;
+#endif
+				temp_end = (range.second >=
+						((temp_start/(FILE_SERVER_CHUNK_SZ)+1)*(FILE_SERVER_CHUNK_SZ)))?((temp_start/(FILE_SERVER_CHUNK_SZ)+1)*(FILE_SERVER_CHUNK_SZ) - 1):range.second;
+			 //TODO write_file_to_server function implemention is not done yet	
+			       
+				fs_service->fs_write_file_to_server(cb,
+						temp_start,
+						temp_end,
+						file_recep[server_index]);
+				if(range.second > temp_end) {
+					/*it means we need to write to more then one fileserver*/                                          
+					temp_start = temp_end + 1;
+				} else {
+					break;
+				}
+			}
+		}
+		cb->dirty = false;
+	}
+}
 
 cache::cache(){
 #ifdef DEBUG_FLAG
@@ -146,7 +189,9 @@ bool cache_manager::add_to_front_allocated_list_l (cache_block *cb) {
 bool cache_manager::rm_from_allocated_list_l (cache_block *cb) {
 	mutx_allocated_list.lock();
 	auto it = find(allocated_list.begin(), allocated_list.end(),cb);
+	c_m->obj_cache->lru_item_delete(cb);	
 	allocated_list.erase(it);
+	
 	(*it)->clean_cache_block(cb);
 	rm_from_map_fname_chunks_l(cb->file_name, cb);
 	mutx_allocated_list.unlock();
@@ -319,7 +364,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 		if (cb->start_index > start) {
 			/*this block is completely out of range*/
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<":" << "partially not in the cache chunk_Start: "<< start << " chunk_end : "<< (cb->start_index>end?end:cb->start_index);
+                 cout<<"\n"<<__func__ <<":" << "partially not in the cache chunk_Start: "<< start << " chunk_end : "<< (cb->start_index>end?end:cb->start_index-1);
 #endif
 
 
@@ -340,9 +385,12 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 				obj_cache->refer(cb);
 #ifdef DEBUG_FLAG
                  cout<<"\n"<<__func__ <<": Current block start : "<< cb->start_index<< " end: "<< cb->end_index;
-		 cout<< "		: Current pointer is at :" << start;
+		 cout<<"\n"<<__func__ <<": Current pointer is at :" << start;
 #endif
-				memcpy(temp_buf, cb->data+(cb->start_index-start),end-start+1 );
+				memcpy(temp_buf, cb->data+(start-cb->start_index),end-start+1 );
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Temp buf : "<< temp_buf;
+#endif
 				file_chunks.push_back(make_pair(make_pair(start,end),temp_buf));
 				start = end;
 #ifdef DEBUG_FLAG
@@ -357,7 +405,10 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
                  cout<<"\n"<<__func__ <<": Current block start : "<< cb->start_index<< " end: "<< cb->end_index;
 		 cout << "		 :  Current pointer is at :" << start;
 #endif
-				memcpy(temp_buf, cb->data+(cb->start_index-start),cb->end_index-start+1 );
+				memcpy(temp_buf, cb->data+(start-cb->start_index),cb->end_index-start+1 );
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Temp buf : "<< temp_buf;
+#endif
 				file_chunks.push_back(make_pair(make_pair(start,cb->end_index),temp_buf));
 				start = cb->end_index + 1;
 #ifdef DEBUG_FLAG
@@ -368,7 +419,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 		it++;
 	}
 	if(end-start !=0) {
-		/* remaining rainge is missing */
+		/* remaining range is missing */
 #ifdef DEBUG_FLAG
                  cout<<"\n"<<__func__ <<": Done reading Blocks in cache : Remaining, start: "<< start << " end: "<< end ;
 
@@ -378,10 +429,16 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 	/* send read request to file server */
 
 #ifdef DEBUG_FLAG
-                 cout<<"\n"<<__func__ <<": Printing All the missing blocks ";
+                 cout<<"\n"<<__func__ <<": Printing All the missing blocks " <<missing_chunks.size();
 #endif
 
 	for(auto it = missing_chunks.begin(); it != missing_chunks.end(); it++) {
+
+#ifdef DEBUG_FLAG
+                 cout<<"\n"<<__func__ <<": Requesting data from Server: start " <<it->first;
+		cout<<"\n"<<__func__ <<": Requesting data from Server: end " <<it->second;
+#endif
+
 		all_chunks_available = false;
 		pair<int,int> start_end;
 		start_end = *it;
@@ -393,7 +450,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
                  cout<<"\n " <<"			"<< start_end.first <<" -- "<< start_end.second;
 #endif
 		while(1) {
-				server_index = (temp_start/(FILE_SERVER_CHUNK_SZ))%file_dir[cb->file_name]->server_list.size();
+				server_index = (temp_start/(FILE_SERVER_CHUNK_SZ))%file_dir[file_name]->server_list.size();
 			
 #ifdef DEBUG_FLAG
 		cout<<"\n"<<__func__<<" Server number = "<< server_index;
@@ -442,7 +499,7 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 
 	for(auto it = file_chunks.begin(); it!= file_chunks.end(); it++) {
 #ifdef DEBUG_FLAG
-                 cout<<"\n 				"<< (*it).first.first <<" -- " << (*it).first.second;
+                 cout<<"\n 				"<< (*it).first.first <<" -- " << (*it).first.second << " -- " <<(*it).second;
 #endif
 
 		memcpy(buf+current, (*it).second,(*it).first.second - (*it).first.first + 1);
@@ -451,7 +508,10 @@ int cache_manager::read_file (string file_name, char *buf, int start,int end, in
 	}
 
 	if(all_chunks_available == false) {
-		cache_hit = 0;
+		*cache_hit = 0;
+	}
+	else{
+		*cache_hit=1;
 	}
 #ifdef DEBUG_FLAG
 	cout<< "\n Read and returing  size: "<<current;
@@ -554,9 +614,10 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 #endif
 			int size_to_copy = (CACHE_BLOCK_SZ)>end-start? (end-start+1): ((CACHE_BLOCK_SZ));
 			cout <<"\n size of copy " <<size_to_copy;
-			memcpy(cb->data, temp_buf+current_written_sz, CACHE_BLOCK_SZ>end-start?end-start+1:(CACHE_BLOCK_SZ));
+			memcpy(cb->data, temp_buf+current_written_sz, CACHE_BLOCK_SZ>end-start?end-start+1:(CACHE_BLOCK_SZ+1));
 #ifdef DEBUG_FLAG
 			cout<<"\n"<<__func__<<" Memcpy is finished : data size "<< (CACHE_BLOCK_SZ>end-start?end-start+1:(CACHE_BLOCK_SZ));
+			cout<<"\n"<<__func__<<cb->data;
 			cout<<"\n";
 #endif
 			current_written_sz = current_written_sz +  CACHE_BLOCK_SZ>end-start?end-start+1:((CACHE_BLOCK_SZ));
@@ -581,15 +642,97 @@ bool cache_manager::write_file (string file_name, const void *buf, int start,int
 #endif
 		}
 	}
+	cout<<"\n";
 }
 
 bool cache_manager::clean_file (string file_name, string operation) {
+	#ifdef DEBUG_FLAG
+					cout<<"\n"<<__func__<<" cleaning file from cache -> "<<file_name;
+	#endif
+	
 	/* harvest dirty blocks for this file and clean it from the cache*/
 	if(operation == "close") {
-	
+		auto it=c_m->obj_cache->lru_list.begin();
+		while(it!=c_m->obj_cache->lru_list.end()){
+			cache_block *cb=*it;
+			if(cb->file_name.compare(file_name)==0){
+				if(cb->dirty == false) {
+	#ifdef DEBUG_FLAG
+					cout<<"\n fluser: Non-dirty filename:"<<cb->file_name ;
+	#endif
+					it++;
+					c_m->add_to_back_free_list_l (cb);
+					c_m->rm_from_allocated_list_l (cb);
+				} else {
+	#ifdef DEBUG_FLAG
+					cout<<"\n fluser: Dirty block filename:"<<cb->file_name;
+	#endif
+					harvest_block_file(cb);
+					c_m->mutx_dirty_list.lock();
+					for(auto it2 = c_m->dirty_list.begin(); it2 != c_m->dirty_list.end(); ) {
+						cache_block *cb2 = *it;
+						if(cb2->dirty == false) {
+							c_m->dirty_list.erase(it2); 
+						} else {
+							it2++;
+						}
+					}	
+					c_m->mutx_dirty_list.unlock();
+					/* Remove from the dirty list */
+					it++;
+					c_m->add_to_back_free_list_l (cb);
+					c_m->rm_from_allocated_list_l (cb);
+					
+				}
+				//c_m->obj_cache->lru_item_delete(cb);
+			}
+			else ++it;
+		}
 	
 	} else {
 	
-		/*delete, remove dirty block for this file and also remove it from the map */
+		auto it=c_m->obj_cache->lru_list.begin();
+		while(it!=c_m->obj_cache->lru_list.end()){
+			cache_block *cb=*it;
+#ifdef DEBUG_FLAG
+				cout<<"\n"<<__func__<<"Cleaning file ->"<<cb->file_name ;
+				cout<<"\n";
+				cout<<"\n";
+#endif
+			if(cb->file_name.compare(file_name)==0){
+				if(cb->dirty == false) {
+#ifdef DEBUG_FLAG
+				cout<<"\n fluser: Non-dirty filename:"<<cb->file_name ;
+#endif
+					it++;
+					c_m->add_to_back_free_list_l (cb);
+					c_m->rm_from_allocated_list_l (cb);
+				} else {
+#ifdef DEBUG_FLAG
+				cout<<"\n fluser: Dirty block filename:"<<cb->file_name;
+#endif
+					//harvest_block_file(cb);
+					c_m->mutx_dirty_list.lock();
+					for(auto it2 = c_m->dirty_list.begin(); it2 != c_m->dirty_list.end(); ) {
+						cache_block *cb2 = *it;
+						if(cb2->file_name.compare(file_name)==0) {
+							c_m->dirty_list.erase(it2); 
+						} else {
+							it2++;
+						}
+					}	
+					c_m->mutx_dirty_list.unlock();
+					/* Remove from the dirty list */
+					it++;
+					if(cb->dirty==true)
+						cb->dirty==false;	
+					c_m->add_to_back_free_list_l (cb);
+					c_m->rm_from_allocated_list_l (cb);
+					
+				}
+				//c_m->obj_cache->lru_item_delete(cb);
+			}
+			else ++it;
+		}
 	}
 }

@@ -45,6 +45,9 @@ extract_response_from_payload(FileAccessResponse Response) {
          c_response->start_byte = Response.startbyte();
          c_response->end_byte = Response.endbyte();
          c_response->stripe_width = Response.stripwidth();
+	 c_response->create_time=Response.createtime();
+	 c_response->last_modified_time=Response.lastupdatetime();
+	 c_response->file_size=Response.filesize();
 #ifdef DEBUG_FLAG
                  cout<<"\n"<<__func__ <<": server recevied size"<< Response.serverlist_size();
 #endif
@@ -449,8 +452,8 @@ int mm_delete_file (const char *filename) {
         }
         delete(c_req);
         delete(c_response);
-	for(auto it= file_dir[filename]->server_list.begin();it!=file_dir[filename]->server_list.end();it++)
-		fs_service->fs_delete_file_from_server(filename,*it);
+	//for(auto it= file_dir[filename]->server_list.begin();it!=file_dir[filename]->server_list.end();it++)
+	//	fs_service->fs_delete_file_from_server(filename,*it);
 	
 
 

@@ -44,7 +44,7 @@ typedef struct file_list_{
 	uint32_t size;
 	long int creation_time;
 	long int modification_time;
-	int stripe_width;
+	uint32_t stripe_width;
 	vector<mm_permission> access_permissions;
 	vector <string> server_name;
 }file_list_t;

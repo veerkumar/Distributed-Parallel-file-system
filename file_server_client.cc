@@ -37,8 +37,15 @@ extract_response_from_payload(FileReadWriteResponse Response) {
                  c_response->code = ERROR;
          }
          c_response->request_id = Response.requestid();
-	 c_response->data = new char[Response.data().size()+1] ;
-	 strncpy((c_response->data),Response.data().c_str(),Response.data().size());
+	 c_response->data = new char[Response.data().size()] ;
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<"Response Data size= "<<Response.data().size();
+	cout<<"\n"<<__func__<<"Response received = "<<Response.data();
+#endif
+	 memcpy(c_response->data,Response.data().c_str(),Response.data().size()+1);
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<"Response after mem_cpy = "<<c_response->data;
+#endif
 	 c_response->size = Response.data().size();
 	 return c_response;
 }
@@ -83,7 +90,8 @@ make_req_payload (FileReadWriteRequest *payload,
 	payload->set_requestid(req->request_id);
 	payload->set_filename(req->file_name);
 	payload->set_reqipaddrport(req->req_ipaddr_port);
-	payload->set_data(req->data, req->end_byte-req->start_byte);
+	if(req->type==WRITE)
+		payload->set_data(req->data, req->end_byte-req->start_byte+1);
 	payload->set_stripwidth(req->strip_width);
 }
 
@@ -127,6 +135,15 @@ int file_server_client::fs_write_file_to_server( cache_block *cb, int start, int
 	c_req->strip_width = file_dir[cb->file_name]->stripe_width;
 	c_req->data =  new char[end-start+1];
 	memcpy(c_req->data, cb->data, end-start+1);
+
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" Start= "<<start;
+	cout<<"\n"<<__func__<<" end= "<<end;
+	cout<<"\n"<<__func__<<" data before copy = "<<cb->data;
+	cout<<"\n"<<__func__<<" data after copy = "<<c_req->data;
+#endif
+
+
 	
 	c_response = (fs_connections[file_server])->read_write_request_handler(c_req);
 
@@ -172,12 +189,16 @@ int file_server_client:: fs_read_file_to_server(string file_name, char *buf, int
                 delete(c_response);
                 return -1;
         } else {
-
-	     memcpy(buf, c_response->data, start-end+1);
+#ifdef DEBUG_FLAG
+	cout<<"\nResponse Extracted = "<<c_response->data;
+	
+	cout<<"\n";
+#endif
+	     memcpy(buf, c_response->data, end-start+1);
         }
         delete(c_req);
         delete(c_response);
-        return start-end+1;
+        return end-start+1;
 }
 
 int file_server_client:: fs_delete_file_from_server(string file_name,string file_server) {

@@ -119,6 +119,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    n1.fileID=get_random_number();
 	    n1.size=0;
 	    n1.stripe_width=request->stripewidth();
+
 	    n1.creation_time=static_cast<long int> (time(NULL));
 	    n1.modification_time=static_cast<long int> (time(NULL));
 	    pthread_mutex_init(&(n1.fileLock), nullptr);
@@ -161,12 +162,14 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		    
 
                     for(it2=it->access_permissions.begin();it2 != it->access_permissions.end(); it2++){
-			c_req->type=DELETE_REVOKE;
-			c_req->start_byte=it2->start_byte;
-		        c_req->end_byte=it2->end_byte;
-		        c_req->request_id=get_random_number();
-		        c_req->file_name=request->filename();
-			c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
+			if(it2->client_ipaddr_port.compare(request->reqipaddrport())!=0){
+				c_req->type=DELETE_REVOKE;
+				c_req->start_byte=it2->start_byte;
+				c_req->end_byte=it2->end_byte;
+				c_req->request_id=get_random_number();
+				c_req->file_name=request->filename();
+				c_response=m_m->client_connection[it2->client_ipaddr_port]->send_revoke_request(c_req);
+			}
 		    }
 		    pthread_mutex_unlock(&(it->fileLock));;
 		    fileList.erase(fileList.begin()+i);  
@@ -519,7 +522,7 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 	    for(it=fileList.begin();it != fileList.end(); it++){
 		if(it->name.compare(request->filename())==0){
 #ifdef DEBUG_FLAG
-	cout<<"\n"<<__func__<<" FILE Found";
+	cout<<"\n"<<__func__<<" FILE Found ************************";
 
 #endif
 		    pthread_mutex_lock(&(it->fileLock));;
@@ -529,6 +532,11 @@ class meta_data_manager_service_impl : public MetaDataManagerService::Service {
 		    reply->set_filesize(it->size);
 		    reply->set_fdis(it->fileID);
 		    reply->set_stripwidth(it->stripe_width);
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" StripWidth = "<<it->stripe_width;
+
+#endif
+
 		    int count=0;
 		    for(auto it2=it->server_name.begin();it2 != it->server_name.end(); it2++,count++){
 			reply->add_serverlist(*it2);

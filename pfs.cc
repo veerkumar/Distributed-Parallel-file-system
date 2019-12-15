@@ -147,7 +147,7 @@ void harvester_process() {
 		cout<<"\n Harvester process created";
 #endif
 	while(1) {
-		std::this_thread::sleep_for(std::chrono::seconds(5));
+		std::this_thread::sleep_for(std::chrono::seconds(15));
 #ifdef DEBUG_FLAG
 		cout<<"\n Harvester_process: harvester process Timeout";
 #endif
@@ -170,34 +170,59 @@ void flusher() {
 	int reduce_to_sz = 0;	
 	int current_sz = 0;
 	current_sz = c_m->allocated_list.size();
-	filled_per = (current_sz/(ROW*COLUMN))*100;
+	filled_per = ((double)current_sz/(double)(ROW*COLUMN))*100;
 	cache_block *cb = NULL;
+
+#ifdef DEBUG_FLAG
+	cout<<"\n"<<__func__<<" current size = "<<current_sz<< " percentage = " << filled_per;
+#endif
 	if(filled_per >= FLUSH_HIGH_MARK ) { 
-		reduce_to_sz = (FLUSH_LOW_MARK/100)*(ROW*COLUMN);
+		reduce_to_sz = ((double)FLUSH_LOW_MARK/(double)100)*(double)(ROW*COLUMN);
 
 #ifdef DEBUG_FLAG
 		cout<<"\n"<<__func__ <<": Reaching cache from: "<<current_sz<<" to: "<<reduce_to_sz;
 #endif
 
-		while( (c_m->allocated_list.size() - reduce_to_sz) <= 0) {
+		while( (c_m->allocated_list.size() - reduce_to_sz) > 0) {
 			cb = c_m->obj_cache->lru_list.back();	
 
 			if(cb->dirty == false) {
-#ifdef DEBUG_FLAG_VERBOSE
-				cout<<"\n fluser: Non-dirty filename:"<<cb->file_name;
+#ifdef DEBUG_FLAG
+				cout<<"\n fluser: Non-dirty filename:"<<cb->file_name ;
 #endif
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l(cb);
 			} else {
-#ifdef DEBUG_FLAG_VERBOSE
+#ifdef DEBUG_FLAG
 				cout<<"\n fluser: Dirty block filename:"<<cb->file_name;
 #endif
 				harvest_block(cb);
 				/* Remove from the dirty list */
 				c_m->add_to_back_free_list_l (cb);
 				c_m->rm_from_allocated_list_l (cb);
+				c_m->mutx_dirty_list.lock();
+				for(auto it = c_m->dirty_list.begin(); it != c_m->dirty_list.end(); ) {
+					cache_block *cb = *it;
+					if(cb->dirty == false) {
+						c_m->dirty_list.erase(it); 
+					} else {
+						it++;
+					}
+				}	
+				c_m->mutx_dirty_list.unlock();
 			}
-			c_m->obj_cache->lru_item_delete(cb);
+			
+		}
+		#ifdef DEBUG_FLAG
+                	cout<<"\n"<<__func__ <<": Display LRU list";
+		#endif
+		for(auto it = c_m->obj_cache->lru_list.begin(); it!= c_m->obj_cache->lru_list.end();it++){
+			cout<<"\n           file_name      : "<< (*it)->file_name;
+			cout<<"\n           start_name     : "<< (*it)->start_index;
+			cout<<"\n           end_index      : "<< (*it)->end_index;
+			cout<<"\n           Dirty          : "<< (*it)->dirty;
+			cout<<"\n           dirty list size: "<< (*it)->file_name;
+			cout<<"\n";
 		}
 	}
 }
@@ -402,9 +427,6 @@ int pfs_close(uint32_t filedes){
 	file_info_store *file = file_dir[fdis_to_filename_map[filedes]];
 	file->access_permission.clear();
 	
-	delete file;
-	file_dir.erase(fdis_to_filename_map[filedes]);
-	fdis_to_filename_map.erase(filedes);
 	return 1;
 }
 
@@ -413,12 +435,28 @@ int pfs_delete(const char *filename) {
 	 mm_delete_file(filename);
 	/* clean the cache for this file */
 	c_m->clean_file(filename, "delete");
-
+	
+cout<<"DELELELELELELLE\n";
+cout<<"\n";
+cout<<"\n";
+cout<<"\n";
+cout<<"\n";
 	file_info_store *file = file_dir[filename];
 	file->access_permission.clear();
+	auto temp=file->server_list.begin();
+	for(auto it=file->server_list.begin();it!=file->server_list.end();it++)
+		if(it==file->server_list.begin())
+			fs_service->fs_delete_file_from_server(filename,*it);
+		else if(it->compare(*temp)==0)
+			break;
+		else
+			fs_service->fs_delete_file_from_server(filename,*it);
+			
 
 	delete file;
 	file_dir.erase(filename);
+	
+	
 	return 1;
 }
 

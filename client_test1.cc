@@ -3,7 +3,7 @@
 
 
 #define ONEKB 1024
-#define Filesize 400
+#define Filesize 4096
 int main(int argc, char *argv[])
 {
   int ifdes;
@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
   int cache_hit;
   ssize_t nread;
   string line;
-  
+    struct pfs_stat mystat;
   // Initialize the client
   initialize(argc, argv);
 
@@ -31,12 +31,11 @@ int main(int argc, char *argv[])
 
   ifstream file (input_fname);
 
-  //buf = new char[4*ONEKB];
   
   FILE * fid=fopen(input_fname,"r");
   buf = (char*) malloc (sizeof(char)*Filesize);
   int result = fread (buf,1,Filesize,fid);
-  //cout<<buf;
+  cout<<buf;
   //std::this_thread::sleep_for(std::chrono::seconds(10));
   
 
@@ -57,16 +56,13 @@ int main(int argc, char *argv[])
     }
 
   //At Client 1
-  //Write the first 200 bytes of data from the input file onto pfs_file
+  //Write the first 150 bytes of data from the input file onto pfs_file
   err_value = pfs_write(fdes, (void *)buf, Filesize, 0, &cache_hit);
   cout<<"Wrote %d bytes to the file\n", err_value;
-  
-  //err_value = pfs_read(fdes, (void *)buf, 2*ONEKB, ONEKB, &cache_hit);
-  //printf("Read %d bytes of data from the file\n", err_value);
-  std::this_thread::sleep_for(std::chrono::seconds(120));
-  
-  //pfs_close(fdes);
-
+  std::this_thread::sleep_for(std::chrono::seconds(20));
+  pfs_close(fdes);
+  pfs_delete("pfs_file1");
+std::this_thread::sleep_for(std::chrono::seconds(20));
   free(buf); 
-  return 0;
+  return 1;
 }

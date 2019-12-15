@@ -26,7 +26,7 @@
 
 #define DEBUG_FLAG 1
 
-#define  FILE_SERVER_CHUNK_SZ 100
+#define  FILE_SERVER_CHUNK_SZ 4096
 
 using namespace std;
 enum request_type {
@@ -76,8 +76,8 @@ typedef struct  file_access_response_ {
   uint32_t start_byte;
   uint32_t end_byte;
   uint32_t fdis ; 
-  uint32_t create_time;
-  uint32_t last_modified_time;
+  uint64_t create_time;
+  uint64_t last_modified_time;
   uint32_t file_size;
   int stripe_width;
   vector<string> server_list;

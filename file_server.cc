@@ -4,7 +4,6 @@
 
 
 #define INTERFACE "wlp3s0"
-#define PFS_CHUNK_SIZE 100
 
 string ipAddress;
 int port;
@@ -121,7 +120,7 @@ void meta_data_manager_client::update_last_modified_time (string file_name,int s
 	ClientContext Context;
 
 	Req.set_filename(file_name);
-	Req.set_time(time(0));  // epoch time
+	Req.set_time(static_cast<long int> (time(NULL)));  // epoch time
 	Req.set_newbytewrote(size);  // epoch time
 	Status status = stub_->updateLastModifiedServiceHandler(&Context, Req, &Response);
 	// Act upon its status.
@@ -161,23 +160,30 @@ class file_server_service_impl : public FileServerService::Service {
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" StripWidth ="<< (*it).second;
 #endif
-				uint32_t fileNumber=((request->startbyte()/(PFS_CHUNK_SIZE))%(*it).second)/NUM_FILE_SERVERS;
-				name= (*it).first +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
+				uint32_t fileNumber=((request->startbyte()/(FILE_SERVER_CHUNK_SZ))%(*it).second)/NUM_FILE_SERVERS;
+				name= "./storage/"+(*it).first +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
 				fid=fopen(name.c_str(),"r");
 				reply->set_requestid(request->requestid());
 			     	reply->set_reqstatus(FileReadWriteResponse::OK);
-				buffer = (char*) malloc (sizeof(char)*(request->endbyte()-request->startbyte()+1));
-				uint32_t i=request->startbyte()/(PFS_CHUNK_SIZE);
-				uint32_t offset=(((i-i%7)/(*it).second)*((*it).second-1)*(PFS_CHUNK_SIZE))+(i%(*it).second)*4096;
+				buffer = (char*) malloc (sizeof(char)*(request->endbyte()-request->startbyte()+2));
+				uint32_t i=request->startbyte()/(FILE_SERVER_CHUNK_SZ);
+				uint32_t offset=(((i-i%7)/(*it).second)*((*it).second-1)*(FILE_SERVER_CHUNK_SZ))+(i%(*it).second)*FILE_SERVER_CHUNK_SZ;
 				uint32_t startByte=request->startbyte()-offset;
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" Reading File =" << name;
 	cout<<"\n"<<__func__<<" Offset ="<< startByte;
+	cout<<"\n"<<__func__<<"size of char"<<sizeof(char);
 #endif
 			  	if (buffer == NULL) {fputs ("Memory error",stderr); exit (2);}
 				fseek(fid,startByte,SEEK_SET);
 			  	// copy the file into the buffer:
-			  	result = fread (buffer,1,request->endbyte()-request->startbyte()+1,fid);
+			  	result = fread (buffer,sizeof(char),request->endbyte()-request->startbyte()+1,fid);
+#ifdef DEBUG_FLAG
+	
+	cout<<"\n"<<__func__<<" Data ="<< buffer;
+	cout<<"\n";
+	cout<<"\n";
+#endif
 			  	if (result != request->endbyte()-request->startbyte()+1) {fputs ("Reading error",stderr); exit (3);}
 				fclose(fid);		    	
 				reply->set_data(buffer);
@@ -196,25 +202,27 @@ class file_server_service_impl : public FileServerService::Service {
         cout<<"\n"<<__func__<<" Request End Byte = "<< request->endbyte();
         cout<<"\n"<<__func__<<" Request Request ID ="<< request->requestid();
         cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
-	cout<<"\n"<<__func__<<" Request File Name ="<< request->stripwidth();
+	cout<<"\n"<<__func__<<" Request StripeWidth ="<< request->stripwidth();
 #endif
-		    uint32_t fileNumber=((request->startbyte()/(PFS_CHUNK_SIZE))%request->stripwidth())/NUM_FILE_SERVERS;
-		    name= request->filename() +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
-		    fid=fopen(name.c_str(),"w");
+		    uint32_t fileNumber=((request->startbyte()/(FILE_SERVER_CHUNK_SZ))%request->stripwidth())/NUM_FILE_SERVERS;
+		    name= "./storage/"+ request->filename() +"."+file_server_ip_port+"."+ std::to_string(fileNumber);
+	            
+		    fid=fopen(name.c_str(),"a");
 		    reply->set_requestid(request->requestid());
 		    reply->set_reqstatus(FileReadWriteResponse::OK);
-		    uint32_t i=request->startbyte()/(PFS_CHUNK_SIZE);
-		    uint32_t offset=(((i-i%7)/request->stripwidth())*(request->stripwidth()-1)*(PFS_CHUNK_SIZE))+(i%request->stripwidth())*4096;
+		    uint32_t i=request->startbyte()/(FILE_SERVER_CHUNK_SZ);
+		    uint32_t offset=(((i-i%request->stripwidth())/request->stripwidth())*(request->stripwidth()-1)*(FILE_SERVER_CHUNK_SZ))+(i%request->stripwidth())*FILE_SERVER_CHUNK_SZ;
 		    uint32_t startByte=request->startbyte()-offset;
 #ifdef DEBUG_FLAG
 	cout<<"\n"<<__func__<<" Writing File =" << name;
 	cout<<"\n"<<__func__<<" Offset ="<< startByte;
 	cout<<"\n"<<__func__<<" Data ="<< request->data();
 #endif
+		    fs_write.lock();
 		    fseek(fid,startByte,SEEK_SET);
-		    fwrite ((void *)&(request->data()),1,request->endbyte()-request->startbyte()+1,fid);
+		    fwrite (request->data().c_str(),sizeof(char),request->endbyte()-request->startbyte()+1,fid);
 		    fclose(fid);		    	
-				
+		    fs_write.unlock();	
 		    
 		    for(auto it=fileManager.begin();it!=fileManager.end();it++){
 			if((*it).first.compare(request->filename())==0){
@@ -240,7 +248,8 @@ class file_server_service_impl : public FileServerService::Service {
         cout<<"\n"<<__func__<<" Request File Name ="<< request->filename();
 #endif
 		   
-		string del="exec rm -r ./"+request->filename()+"."+file_server_ip_port+"*";
+		string del="exec rm -r ./storage/"+request->filename()+"."+file_server_ip_port+"*";
+		cout<<del;
 		system(del.c_str());
 	    }
 
@@ -288,4 +297,3 @@ int main(int argc, char** argv) {
 	
 	return 0;
 }
-

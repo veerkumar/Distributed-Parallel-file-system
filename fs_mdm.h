@@ -25,6 +25,7 @@ using FileServer::FileReadWriteResponse;
 using FileServer::FileServerService;
 
 
+mutex fs_write;
 
 class meta_data_manager_client {
 	private:

@@ -1,8 +1,8 @@
 //Global object for cache;
 
-#define CACHE_BLOCK_SZ 100
-#define ROW 8
-#define COLUMN 8
+#define CACHE_BLOCK_SZ 2048
+#define ROW 32
+#define COLUMN 32
 
 extern map<string,file_info_store*> file_dir;
 
