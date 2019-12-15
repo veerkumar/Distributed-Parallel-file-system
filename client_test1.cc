@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   std::this_thread::sleep_for(std::chrono::seconds(20));
   pfs_close(fdes);
   pfs_delete("pfs_file1");
-std::this_thread::sleep_for(std::chrono::seconds(20));
+  while(1);
   free(buf); 
   return 1;
 }
