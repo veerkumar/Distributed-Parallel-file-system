@@ -3,8 +3,8 @@
 #include "config.h"
 #define HARVEST_TIME 30    // In second
 /* Make room for new cache block */
-#define FLUSH_HIGH_MARK 30   // kick flusher if is more then high mark %
-#define FLUSH_LOW_MARK  10   // Keep doing it till it reach low mark %
+#define FLUSH_HIGH_MARK 70   // kick flusher if is more then high mark %
+#define FLUSH_LOW_MARK  30   // Keep doing it till it reach low mark %
 #define FLUSHER_TIMEOUT 5   // x Seconds
 using namespace std;
 
