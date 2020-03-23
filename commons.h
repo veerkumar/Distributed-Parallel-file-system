@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Pramod Kumar(veer)
+ *
+ * Description:  commons.cc
+ * Shared declaration and variable accross all process code i.e included in Makefile
+ *
+ */
+
 #include <chrono>
 #include <iostream>
 #include <memory>

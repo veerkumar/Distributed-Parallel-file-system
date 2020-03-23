@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Pramod Kumar(veer)
+ *
+ * Description:  pfs.cc
+ * Parallel file system  declarations
+ *
+ */
+
 #ifndef PFS_H
 #define PFS_H
 #include "config.h"

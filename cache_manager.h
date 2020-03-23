@@ -1,4 +1,12 @@
-//Global object for cache;
+
+/*
+ *
+ * Author: Pramod Kumar(veer)
+ *
+ * Description:  Cache_manager.h
+ * 
+ *
+ */
 
 #define CACHE_BLOCK_SZ 2048
 #define ROW 32

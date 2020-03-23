@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Pramod Kumar(veer) & Soheil 
+ *
+ * Description:  Client server.cc
+ * It is a thread in every client process  and always listen for metadatamanger permission revoke request. 
+ *  It is thread safe
+ *
+ */
 #include "commons.h"
 #include "cs_mdm.h"
 #include "c_mdm.h"

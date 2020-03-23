@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Pramod Kumar(veer) & soheil
+ *
+ * Description:  Cache_manager.cc
+ * Manages cache in every client process
+ *
+ */
+
 #include "commons.h"
 #include "cache_manager.h"
 #include "config.h"

@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Pramod Kumar(veer) & shoeil
+ *
+ * Description:  pfs.cc
+ * Parallel file system  , it is the main interface to access distributed syncronus file system.
+ * Client can call these api's to access the fileserver cluster, and client will be agnostic about which server stores the file.
+ */
+
 #include "commons.h"
 #include "pfs.h"
 #include "c_mdm.h"

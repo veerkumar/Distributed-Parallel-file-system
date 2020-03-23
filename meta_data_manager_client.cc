@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Soheil & Pramod Kumar(veer)
+ *
+ * Description:  meta_data_manager_client.cc
+ * It handle connection & communicaiton with meta_datamanger and run as a thread in every client. 
+ *
+ */
+
 #include "commons.h"
 #include "config.h"
 #include "c_mdm.h"

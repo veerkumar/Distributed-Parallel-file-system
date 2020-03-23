@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Soheil 
+ *
+ * Description:  meta_data_manager_server.cc
+ * It create a process to work as a broker between multiple client and multiple file servers
+ *
+ */
+
 #include "commons.h"
 #include "meta_data_manager_services.grpc.pb.h"
 #include "client_server_services.grpc.pb.h"

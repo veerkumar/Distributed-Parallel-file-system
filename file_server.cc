@@ -1,3 +1,12 @@
+/*
+ *
+ * Author: Pramod Kumar(veer) & Soheil
+ *
+ * Description:  file_server.cc
+ * Serve client file access(read and write) request 
+ *
+ */
+
 #include "commons.h"
 #include "fs_mdm.h"
 #include "config.h"
